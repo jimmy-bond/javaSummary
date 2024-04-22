@@ -1163,9 +1163,247 @@ public E next() {
 
 如果需要删除或插入元素，也可以使用迭代器进行操作。
 
+#### RandomAccess 接口
+
+~~~java
+public interface RandomAccess {
+}
+~~~
+
+==这个接口什么都没有实现，只是一个标识，用来标识这个类有随机访问的能力==
+
 ### Set
 
+#### Comparable 和 Comparator 的区别
+
+`Comparable` 接口和 `Comparator` 接口都是 Java 中用于排序的接口
+
+`Comparable` 接口实际上是出自`java.lang`包 它有一个 `compareTo(Object obj)`方法用来排序
+
+`Comparator`接口实际上是出自 `java.util` 包它有一个`compare(Object obj1, Object obj2)`方法用来排序
+
+~~~java
+Comparator 定制排序
+Collections.sort(arrayList, new Comparator<Integer>() {
+    @Override
+    public int compare(Integer o1, Integer o2) {
+        return o2.compareTo(o1);
+    }
+});
+
+~~~
+
+#### 重写 compareTo 方法实现按年龄来排序
+
+~~~java
+// person对象没有实现Comparable接口，所以必须实现，这样才不会出错，才可以使treemap中的数据按顺序排列
+// 前面一个例子的String类已经默认实现了Comparable接口，详细可以查看String类的API文档，另外其他
+// 像Integer类等都已经实现了Comparable接口，所以不需要另外实现了
+public  class Person implements Comparable<Person> {
+    private String name;
+    private int age;
+
+    public Person(String name, int age) {
+        super();
+        this.name = name;
+        this.age = age;
+    }
+    /**
+     * T重写compareTo方法实现按年龄来排序
+     */
+    @Override
+    public int compareTo(Person o) {
+        if (this.age > o.getAge()) {
+            return 1;
+        }
+        if (this.age < o.getAge()) {
+            return -1;
+        }
+        return 0;
+    }
+}
+~~~
+
+无序性：不等于随机性，是根据对象的hashcode值来进行决定
+
+不可重复性：指添加的元素按照 `equals()` 判断时 ，返回 false，需要同时重写 `equals()` 方法和 `hashCode()` 方法。
+
+以确保相等的对象具有相等的哈希码，并且哈希码相等的对象也必须根据`equals()`方法判断为相等
+
+###  HashSet、LinkedHashSet 和 TreeSet 三者的异同
+
+都不是线程安全的，并且元素唯一
+
+`HashSet`、`LinkedHashSet` 和 `TreeSet` 的主要区别在于底层数据结构不同。`HashSet` 的底层数据结构是哈希表（基于 `HashMap` 实现）。`LinkedHashSet` 的底层数据结构是链表和哈希表，元素的插入和取出顺序满足 FIFO。`TreeSet` 底层数据结构是红黑树，元素是有序的，排序的方式有自然排序和定制排序。
+
 ### Queue
+
+#### Queue 与 Deque 的区别
+
+- `Queue` 扩展了 `Collection` 的接口，根据 **因为容量问题而导致操作失败后处理方式的不同** 可以分为两类方法: 一种在操作失败后会抛出异常，另一种则会返回特殊值。
+- `Deque` 扩展了 `Queue` 的接口, 增加了在队首和队尾进行插入和删除的方法，同样根据失败后处理方式的不同分为两类：
+- `Deque` 是双端队列，在队列的两端均可以插入或删除元素。
+- 事实上，`Deque` 还提供有 `push()` 和 `pop()` 等其他方法，可用于模拟栈。
+
+### [ArrayDeque 与 LinkedList 的区别](#arraydeque-与-linkedlist-的区别)
+
+`ArrayDeque` 和 `LinkedList` 都实现了 `Deque` 接口，两者都具有队列的功能，但两者有什么区别呢？
+
+- `ArrayDeque` 是基于可变长的数组和双指针来实现，而 `LinkedList` 则通过链表来实现。
+- `ArrayDeque` 不支持存储 `NULL` 数据，但 `LinkedList` 支持。
+- `ArrayDeque` 是在 JDK1.6 才被引入的，而`LinkedList` 早在 JDK1.2 时就已经存在。
+- `ArrayDeque` 插入时可能存在扩容过程, 不过均摊后的插入操作依然为 O(1)。虽然 `LinkedList` 不需要扩容，但是每次插入数据时均需要申请新的堆空间，均摊性能相比更慢。
+
+从性能的角度上，选用 `ArrayDeque` 来实现队列要比 `LinkedList` 更好。此外，`ArrayDeque` 也可以用于实现栈。
+
+#### PriorityQueue
+
+1. `PriorityQueue` 利用了==二叉堆的数据结构来实现的==，==底层使用可变长的数组来存储数据==
+2. `PriorityQueue` 通过堆元素的上浮和下沉，实现了==在 O(logn) 的时间复杂度内插入元素和删除堆顶元素===。
+3. `PriorityQueue` 是非线程安全的，且不支持存储 `NULL` 和 `non-comparable` 的对象。
+4. ==`PriorityQueue` 默认是小顶堆==
+
+### BlockingQueue
+
+`BlockingQueue` （阻塞队列）是一个接口，继承自 `Queue`。`BlockingQueue`阻塞的原因是其支持当队列没有元素时一直阻塞，直到有元素；还支持如果队列已满，一直等到队列可以放入新元素时再放入
+
+常用阻塞队列
+
+ArrayBlockingQueue，LinkedBlockingQueue，PriorityBlockingQueue
+
+### ArrayBlockingQueue 和 LinkedBlockingQueue 有什么区别
+
+`它们都是线程安全的
+
+区别：
+
+1. 底层实现：`ArrayBlockingQueue` 基于数组实现，而 `LinkedBlockingQueue` 基于链表实现。
+2. 是否有界：`ArrayBlockingQueue` 是有界队列，必须在创建时指定容量大小。`LinkedBlockingQueue` 创建时可以不指定容量大小，默认是`Integer.MAX_VALUE`，也就是无界的。但也可以指定队列大小，从而成为有界的。
+3. 锁是否分离： `ArrayBlockingQueue`中的锁是没有分离的，即生产和消费用的是同一个锁；`LinkedBlockingQueue`中的锁是分离的，即生产用的是`putLock`，消费是`takeLock`，这样可以防止生产者和消费者线程之间的锁争夺。
+4. 内存占用：`ArrayBlockingQueue` 需要提前分配数组内存，而 `LinkedBlockingQueue` 则是动态分配链表节点内存。这意味着，`ArrayBlockingQueue` 在创建时就会占用一定的内存空间，且往往申请的内存比实际所用的内存更大，而`LinkedBlockingQueue` 则是根据元素的增加而逐渐占用内存空间。
+
+### ArrayBlockingQueue 源码分析
+
+阻塞队列思想
+
+​	阻塞队列就说基于非空和非满两个条件实现生产者和消费者之间的交互，尽管这些交互流程和等待通知的机制实现非常复杂，好在 Doug Lea 的操刀之下已将阻塞队列的细节屏蔽，我们只需调用 `put`、`take`、`offer`、`poll` 等 API 即可实现多线程之间的生产和消费。
+
+![ArrayBlockingQueue 类图](https://oss.javaguide.cn/github/javaguide/java/collection/arrayblockingqueue-class-diagram.png)
+
+它通过 `AbstractCollection` 获得了集合的常见操作方法，然后通过 `Queue` 接口获得了队列的特性。
+
+#### 核心构造方法
+
+~~~java
+// capacity 表示队列初始容量，fair 表示 锁的公平性
+public ArrayBlockingQueue(int capacity, boolean fair) {
+  //如果设置的队列大小小于0，则直接抛出IllegalArgumentException
+  if (capacity <= 0)
+      throw new IllegalArgumentException();
+  //初始化一个数组用于存放队列的元素
+  this.items = new Object[capacity];
+  //创建阻塞队列流程控制的锁
+  lock = new ReentrantLock(fair);
+  //用lock锁创建两个条件控制队列生产和消费
+  notEmpty = lock.newCondition();
+  notFull =  lock.newCondition();
+}
+~~~
+
+默认使用非公平锁，即各个生产者或者消费者线程收到通知后，对于锁的争抢是随机的。
+
+阻塞式获取和新增元素方法：
+
+阻塞式就是在进行操作时判断的notEmpty和notFull锁的状态是否符合。
+
+`put(E e)`：将元素插入队列中，如果队列已满，则该方法会一直阻塞，直到队列有空间可用或者线程被中断。
+
+`take()` ：获取并移除队列头部的元素，如果队列为空，则该方法会一直阻塞，直到队列非空或者线程被中断。
+
+#### put方法源码：
+
+~~~java
+public void put(E e) throws InterruptedException {
+    //确保插入的元素不为null
+    checkNotNull(e);
+    //加锁
+    //消费和生产用的是同一把锁
+    final ReentrantLock lock = this.lock;
+    //这里使用lockInterruptibly()方法而不是lock()方法是为了能够响应中断操作，如果在等待获取锁的过程中被打断则该方法会抛出InterruptedException异常。
+    lock.lockInterruptibly();
+    try {
+            //如果count等数组长度则说明队列已满，当前线程将被挂起放到AQS队列中，等待队列非满时插入（非满条件）。
+       //在等待期间，锁会被释放，其他线程可以继续对队列进行操作。
+        while (count == items.length)
+            notFull.await();
+           //如果队列可以存放元素，则调用enqueue将元素入队
+        enqueue(e);
+    } finally {
+        //释放锁
+        lock.unlock();
+    }
+}
+~~~
+
+~~~java
+private void enqueue(E x) {
+   //获取队列底层的数组
+    final Object[] items = this.items;
+    //将putindex位置的值设置为我们传入的x
+    items[putIndex] = x;
+    //更新putindex，如果putindex等于数组长度，则更新为0
+    if (++putIndex == items.length)
+        putIndex = 0;
+    //队列长度+1
+    count++;
+    //通知队列非空，那些因为获取元素而阻塞的线程可以继续工作了
+    notEmpty.signal();
+}
+~~~
+
+执行步骤为
+
+1. 获取 `ArrayBlockingQueue` 底层的数组 `items`。
+2. 将元素存到 `putIndex` 位置。
+3. 更新 `putIndex` 到下一个位置，如果 `putIndex` 等于队列长度，则说明 `putIndex` 已经到达数组末尾了，下一次插入则需要 0 开始。(`ArrayBlockingQueue` 用到了循环队列的思想，即从头到尾循环复用一个数组)
+4. 更新 `count` 的值，表示当前队列长度+1。
+5. 调用 `notEmpty.signal()` 通知队列非空，消费者可以从队列中获取值了。
+
+非阻塞式获取和新增
+
+1. `offer(E e)`：将元素插入队列尾部。如果队列已满，则该方法会直接返回 false，不会等待并阻塞线程。
+2. `poll()`：获取并移除队列头部的元素，如果队列为空，则该方法会直接返回 null，不会等待并阻塞线程。
+3. `add(E e)`：将元素插入队列尾部。如果队列已满则会抛出 `IllegalStateException` 异常，底层基于 `offer(E e)` 方法。
+4. `remove()`：移除队列头部的元素，如果队列为空则会抛出 `NoSuchElementException` 异常，底层基于 `poll()`。
+5. `peek()`：获取但不移除队列头部的元素，如果队列为空，则该方法会直接返回 null，不会等待并阻塞线程。
+
+### 相关面试题目
+
+#### ArrayBlockingQueue是什么，特点是什么
+
+`ArrayBlockingQueue` 是 `BlockingQueue` 接口的有界队列实现类，常用于多线程之间的数据共享，底层采用数组实现。
+
+==`ArrayBlockingQueue` 的容量有限，一旦创建，容量不能改变。==
+
+为了保证线程安全，`ArrayBlockingQueue` 的并发控制采用可重入锁 `ReentrantLock` ，不管是插入操作还是读取操作，都需要获取到锁才能进行操作。并且，它还支持公平和非公平两种方式的锁访问机制，默认是非公平锁。
+
+`ArrayBlockingQueue` 虽名为阻塞队列，但也支持非阻塞获取和新增元素（例如 `poll()` 和 `offer(E e)` 方法），==只是队列满时添加元素会抛出异常，队列为空时获取的元素为 null==
+
+#### ArrayBlockingQueue 和 LinkedBlockingQueue 有什么区别？
+
+底层数据结构不一样，是否拥有边界界限
+
+锁是否分离：`ArrayBlockingQueue`中的锁是没有分离的，即生产和消费用的是同一个锁；`LinkedBlockingQueue`中的锁是分离的，即生产用的是`putLock`，消费是`takeLock`，这样可以防止生产者和消费者线程之间的锁争夺。
+
+内存占用不一样
+
+#### ArrayBlockingQueue 的实现原理
+
+1. `ArrayBlockingQueue` 内部维护一个定长的数组用于存储元素。
+2. 通过使用 `ReentrantLock` 锁对象对读写操作进行同步，即通过锁机制来实现线程安全。
+3. 通过 `Condition` 实现线程间的等待和唤醒操作。
+
+
 
 ### Map
 
@@ -1356,6 +1594,8 @@ map.putIfAbsent(key, value);
 map.putIfAbsent(key, anotherValue);
 
 ~~~
+
+
 
 ## Java并发面试
 
