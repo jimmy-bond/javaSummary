@@ -1747,6 +1747,11 @@ JMM(Java 内存模型)主要定义了对于一个共享变量，当另一个线�
 
 简单来说就是系统在执行代码的时候并不一定是按照你写的代码的顺序依次执行。
 
+满足下面 2 个条件才能进行：
+
+- 在单线程环境下不能改变程序运行的结果
+- 存在数据依赖关系的不允许重排序
+
 有两种情况
 
 **编译器优化重排**：编译器（包括 JVM、JIT 编译器等）在不改变单线程程序语义的前提下，重新安排语句的执行顺序。
@@ -1855,13 +1860,19 @@ JMM内存模型
 
 如果我们将变量声明为 **`volatile`** ，这就指示 JVM，这个变量是共享且不稳定的，每次使用它都到主存中进行读取。会强制线程每次都从主内存中读取
 
-<img src="https://oss.javaguide.cn/github/javaguide/java/concurrent/jmm.png" alt="JMM(Java 内存模型)" style="zoom:50%;" />
-
 <img src="https://oss.javaguide.cn/github/javaguide/java/concurrent/jmm2.png" alt="JMM(Java 内存模型)强制在主存中进行读取" style="zoom:50%;" />
 
 `volatile` 关键字能保证数据的可见性，但不能保证数据的原子性。除了保证数据可见性还可以**防止 JVM 的指令重排序。**
 
-`volatile` 关键字禁止指令重排序的效果
+**通过两种机制来保证内存可见性:**
+
+禁止jvm指令的重排序
+
+内存屏障：volatile关键字会在写操作后插入写屏障（Write Barrier），在读操作前插入读屏障（Read Barrier），
+
+写屏障会强制将数据更新到主内存，读屏障会强制从主内存中读取变量
+
+**volatile 关键字禁止指令重排序的效果**
 
 **双重校验锁实现对象单例（线程安全）**：
 
@@ -2281,11 +2292,8 @@ CPU 密集型简单理解就是利用 CPU 计算能力的任务比如你在内�
 
 ![img](https://oss.javaguide.cn/github/javaguide/java/concurrent/completablefuture-class-diagram.jpg)
 
-`CompletionStage` 接口描述了一个异步计算的阶段。很多计算可以分成多个阶段或步骤，此时可以通过它将所有步骤组合起来，形成异步计算的流水线。
-
-`CompletionStage` 接口中的方法比较多，`CompletableFuture` 的函数式能力就是这个接口赋予的。从这个接口的方法参数你就可以发现其大量使用了 Java8 引入的函数式编程。
-
-
+- Future用于表示异步计算的结果，只能通过阻塞或者轮询的方式获取结果，而且不支持设置回调方法，Java 8之前若要设置回调一般会使用guava的ListenableFuture，回调的引入又会导致臭名昭著的回调地狱（下面的例子会通过ListenableFuture的使用来具体进行展示）。
+- CompletableFuture对Future进行了扩展，可以通过设置回调的方式处理计算结果，同时也支持组合操作，支持进一步的编排，同时一定程度解决了回调地狱的问题。
 
 ### AQS
 
