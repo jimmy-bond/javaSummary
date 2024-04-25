@@ -490,7 +490,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class Main {
-    public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchFieldException {
+    public static void main(String[] args)   {
         /**
          * 获取 TargetObject 类的 Class 对象并且创建 TargetObject 类实例
          */
