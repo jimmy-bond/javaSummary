@@ -161,9 +161,7 @@ JIT为编译器把文件编译过一次就会保存下来机器码，后面再�
 
 包装类型主要用于集合类（如`ArrayList`、`LinkedList`等）和泛型中，因为这些类只能存储对象，无法存储基本类型。
 
-- **默认值**：成员变量包装类型不赋值就是 `null` ，而基本类型有默认值且不是 `null`。
-
-**几乎所有对象实例都存在于堆中**
+- **默认值**：**成员变量包装类型不赋值就是 `null` ，而基本类型有默认值且不是 `null`。**
 
 **基本数据类型存放在栈中是一个常见的误区。如果它们是局部变量，那么它们会存放在栈中；如果它们是成员变量，那么它们会存放在堆中。！** 
 
@@ -171,9 +169,11 @@ JIT为编译器把文件编译过一次就会保存下来机器码，后面再�
 
 包装类型的==比较的是对象的内存地址
 
-Java 基本数据类型的包装类型的大部分都用到了缓存机制来提升性能，
+Java 基本数据类型的包装类型的大部分都用到了缓存机制来提升性能.
 
 例如 Byte`,`Short`,`Integer`,`Long` 这 4 种包装类默认创建了数值 **[-128，127]** 的相应类型的缓存数据，
+
+**所有整型包装类对象之间值的比较，全部使用 equals 方法比较**
 
 例如
 
@@ -240,7 +240,9 @@ System.out.println(Objects.equals(x, y)); /* true */
 
 字符常量只占 2 个字节; 字符串常量占若干个字节。
 
-字符常量相当于一个整型值( ASCII 值),可以参加表达式运算; 字符串常量代表一个地址值(该字符串在内存中存放位置)
+字符常量相当于一个整型值( ASCII 值),可以参加表达式运算;
+
+ 字符串常量代表一个地址值(该字符串在内存中存放位置)
 
 ### 静态方法为什么不能调用非静态成员
 
@@ -260,7 +262,7 @@ System.out.println(Objects.equals(x, y)); /* true */
 
 重写发生在运行期，是子类对父类的允许访问的方法的实现过程进行重新编写。
 
-1. 方法名、参数列表必须相同，子类方法返回值类型应比父类方法返回值类型更小或相等，抛出的异常范围小于等于父类，访问修饰符范围大于等于父类。
+1. 方法名、参数列表必须相同，子类方法返回值类型应比父类方法返回值类型更小或相等，抛出的异常范围小于等于父类，访问修饰符范围大于等于父类(方法的权限不能比父类低)
 2. 如果父类方法访问修饰符为 `private/final/static` 则子类就不能重写该方法，但是被 `static` 修饰的方法能够被再次声明。
 3. 构造方法无法被重写
 
@@ -284,7 +286,7 @@ new 运算符，new 创建对象实例（对象实例在堆内存中），对象
 
 子类可以拥有自己属性和方法，即子类可以对父类进行扩展。
 
-子类可以用自己的方式实现父类的方法。（以后介绍）。
+子类可以用自己的方式实现父类的方法。
 
 #### 多态
 
@@ -331,7 +333,7 @@ public class Main {
 
 1. **浅拷贝（Shallow Copy）**：
    - 浅拷贝创建一个新对象{==会在堆上创建一个新的对象，区别于引用拷贝的一点==}，然后将原始对象的非静态字段的值复制到新对象中。如果字段是基本类型，那么就会复制其值；如果字段是引用类型，则复制引用，而不是引用的对象本身。因此，新对象和原始对象共享相同的引用对象。
-   - 修改新对象中的引用对象会影响到原始对象中相应的引用对象，因为它们指向同一块内存地址。
+   - **修改新对象中的引用对象**会影响到原始对象中相应的引用对象，因为它们指向同一块内存地址。
 2. **深拷贝（Deep Copy）**：
    - 深拷贝创建一个新对象，并且递归地将原始对象的所有字段以及其引用的对象都复制到新对象中。这意味着新对象和原始对象是完全独立的，对新对象的修改不会影响到原始对象，反之亦然。
    - 在深拷贝中，即使字段是引用类型，也会复制引用的对象本身，而不仅仅是引用。
@@ -346,41 +348,47 @@ Object 类是一个特殊的类，是所有类的父类
 
 - 对于基本数据类型来说，`==` 比较的是值。
 - 对于引用数据类型来说，`==` 比较的是对象的内存地址。
-- equals不重写object类的话也是比较内存地址
+- equals不重写**object类**的话也是比较内存地址
 
 `String` 中的 `equals` 方法是被重写过的，因为 `Object` 的 `equals` 方法是比较的对象的内存地址，而 `String` 的 `equals` 方法比较的是对象的值。
 
 #### hashCode()的作用
 
-`hashCode()` 的作用是获取哈希码（`int` 整数），也称为散列码。这个哈希码的作用是确定该对象在哈希表中的索引位置
+`hashCode()` 的作用是获取哈希码（`int` 整数），也称为散列码。这哈希码值的主要作用是用于支持哈希表这样的数据结构。
 
-`hashCode()` 定义在 JDK 的 `Object` 类中，这就意味着 Java 中的任何类都包含有 `hashCode()` 函数。
+`hashCode()` 定义在 JDK 的 `Object` 类中，意味着 Java 中的任何类都包含有 `hashCode()` 函数。
 
 当你把对象加入 `HashSet` 时，`HashSet` 会先计算对象的 `hashCode` 值来判断对象加入的位置，同时也会与其他已经加入的对象的 `hashCode` 值作比较，如果没有相符的 `hashCode`，`HashSet` 会假设对象没有重复出现。但是如果发现有相同 `hashCode` 值的对象，这时会调用 `equals()` 方法来检查 `hashCode` 相等的对象是否真的相同。如果两者相同，`HashSet` 就不会让其加入操作成功。如果不同的话，就会重新散列到其他位置。这样我们就大大减少了 `equals` 的次数，相应就大大提高了执行速度。
 
 #### 重写 equals() 时也要重写 hashCode() 方法
 
-如果重写 `equals()` 时没有重写 `hashCode()` 方法的话就可能会导致 `equals` 方法判断是相等的两个对象，`hashCode` 值却不相等。
+如果重写 `equals()` 时没有重写 `hashCode()` 方法的话就可能会导致 
+
+`equals` 方法判断是相等的两个对象，`hashCode` 值却不相等。
 
 ### String
 
 #### String、StringBuffer、StringBuilder 的区别？
 
-`String` 是不可变的
+**`String` 是不可变的**
 
 `StringBuilder` 与 `StringBuffer` 都继承自 `AbstractStringBuilder` 类，在 `AbstractStringBuilder` 中也是使用字符数组保存字符串，用append可以修改字符串
 
-`String` 中的对象是不可变的，也就可以理解为常量，线程安全。`StringBuilder` 并没有对方法进行加同步锁，所以是非线程安全的。stringBuffer是安全的
+**`String` 中的对象是不可变的，也就可以理解为常量，线程安全**。
+
+`StringBuilder` 并没有对方法进行加同步锁，所以是非线程安全的。
+
+stringBuffer是安全的
 
 性能方面
 
-每次对 `String` 类型进行改变的时候，都会生成一个新的 `String` 对象，然后将指针指向新的 `String` 对象。
+**每次对 `String` 类型进行改变的时候，都会生成一个新的 `String` 对象，然后将指针指向新的 `String` 对象**。
 
 但使用StringBuilder要承担多线程不安全的风险
 
 #### String为什么不可变
 
-因为`String` 类中使用 `final` 关键字修饰字符数组来保存字符串
+**因为`String` 类中使用 `final` 关键字修饰字符数组**来保存字符串
 
 ~~~java
 public final class String implements java.io.Serializable, Comparable<String>, CharSequence {
@@ -422,7 +430,7 @@ Exception和Error区别
 
 **`Exception`** :程序本身可以处理的异常，可以通过 `catch` 来进行捕获。
 
-又分为两类
+Exception又分为两类
 
 **Checked Exception** 即 受检查异常 和**Unchecked Exception** (不受检查异常，可以不处理也可以正常通过编译)。
 
@@ -483,12 +491,6 @@ public class DebugInvocationHandler implements InvocationHandler {
 使用反射操作
 
 ~~~java
-package cn.javaguide;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
 public class Main {
     public static void main(String[] args)   {
         /**
@@ -535,9 +537,22 @@ public class Main {
 
 注解本质是一个继承了`Annotation` 的特殊接口
 
+~~~java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.SOURCE)
+public @interface Override {
+
+}
+public interface Override extends Annotation{
+
+}
+~~~
+
 注解只有被解析之后才会生效，常见的解析方法有两种：
 
-**编译期直接扫描**和**运行期通过反射处理**
+**编译期直接扫描**:@override
+
+**运行期通过反射处理**:像框架中自带的注解(比如 Spring 框架的 `@Value`、`@Component`)都是通过反射来进行处理的
 
 ## SPI
 
@@ -549,7 +564,7 @@ Service Provider Interface
 
 <img src="https://oss.javaguide.cn/github/javaguide/java/basis/spi/1ebd1df862c34880bc26b9d494535b3dtplv-k3u1fbpfcp-watermark.png" alt="img" style="zoom:50%;" />
 
-当接口存在于调用方这边时，就是 SPI ，由接口调用方确定接口规则，然后由不同的厂商去根据这个规则对这个接口进行实现，从而提供服务。
+由接口调用方确定接口规则，然后由不同的厂商去根据这个规则对这个接口进行实现，从而提供服务。
 
 
 
@@ -570,9 +585,9 @@ Service Provider Interface
 
 Json是一种序列化协议
 
-JDK自带的序列化方式，只需实现 `java.io.Serializable`接口即可。然后最后手动设置**serialVersionUID**。
+**JDK自带的序列化方式，只需实现 `java.io.Serializable`接口即可。然后最后手动设置serialVersionUID。**
 
-在反序列化时，会检查当前类和**serialVersionUID**是否一致，不一致会抛出异常。
+**在反序列化时，会检查当前类和serialVersionUID是否一致，不一致会抛出异常。**
 
 ## I/O
 
@@ -581,7 +596,9 @@ Java IO 流的 40 多个类都是从如下 4 个抽象类基类中派生出来�
 - `InputStream`/`Reader`: 所有的输入流的基类，前者是字节输入流，后者是字符输入流。
 - `OutputStream`/`Writer`: 所有输出流的基类，前者是字节输出流，后者是字符输出流。
 
-Java只有值传递（只会拷贝实参的地址或者实参的值然后创建一个副本），没有引用传递，
+Java只有值传递（只会拷贝实参的地址或者实参的值然后创建一个副本），没有引用传递。
+
+这里的值是对象引用
 
 ## Java代理模式
 
@@ -638,7 +655,9 @@ h : 实现了 InvocationHandler 接口的对象
 
 
 
-**通过`Proxy` 类的 `newProxyInstance()` 创建的代理对象在调用方法的时候，实际会调用到实现`InvocationHandler` 接口的类的 `invoke()`方法。** 你可以在 `invoke()` 方法中自定义处理逻辑，比如在方法执行前后做什么事情。
+**通过`Proxy` 类的 `newProxyInstance()` 创建的代理对象在调用方法的时候，实际会调用到实现`InvocationHandler` 接口的类的 `invoke()`方法。** 
+
+你可以在 `invoke()` 方法中自定义处理逻辑，比如在方法执行前后做什么事情。
 
 ~~~java
 public interface InvocationHandler {
@@ -662,7 +681,9 @@ public interface InvocationHandler {
 
 ### 语法糖
 
-只是方便使用 ，JVM并不支持这些语法糖**在编译阶段就会被还原成简单的基础语法结构，这个过程就是解语法糖**
+只是方便使用 ，JVM并不支持这些语法糖
+
+只是**在编译阶段就会被还原成简单的基础语法结构，这个过程就是解语法糖**
 
 ##### 可变长参数
 
@@ -686,7 +707,9 @@ lambda 表达式也是语法糖
 
 Java语言先比较与C和C++有一个非常大的不同点在于Java语言无法直接操作内存，Unsafe提供了通过Java直接操作内存的API。
 
-`Unsafe` 提供的这些功能的实现需要依赖本地方法（Native Method）。你可以将本地方法看作是 Java 中使用其他编程语言编写的方法。
+`Unsafe` 提供的这些功能的实现需要依赖本地方法（Native Method）。
+
+你可以**将本地方法看作是 Java 中使用其他编程语言编写的方法。**
 
 但是使用这个类有很多限制，由`Bootstrap classLoader`加载不会报错。
 
@@ -753,7 +776,7 @@ public class ArrayList<E> extends AbstractList<E>
 
 `LinkedList` 采用链表存储，所以在头尾插入或者删除元素不受元素位置的影响（`add(E e)`、`addFirst(E e)`、`addLast(E e)`、`removeFirst()`、 `removeLast()`），时间复杂度为 O(1)，如果是要在指定位置 `i` 插入和删除元素的话（`add(int index, E element)`，`remove(Object o)`,`remove(int index)`）， 时间复杂度为 O(n) ，因为需要先移动到指定位置再插入和删除。
 
-**LinkerList不支持快速随机访问**
+**LinkerList不支持快速随机访问,因为底层数据结构是双向链表组成，内存空间不连续，不支持随机访问**
 
 **内存空间占用：**
 
@@ -811,8 +834,6 @@ public ArrayList(Collection<? extends E> c) {
 
 **以无参数构造方法创建 `ArrayList` 时，实际上初始化赋值的是一个空数组。当真正对数组进行添加元素操作时，才真正分配容量。即向数组中添加第一个元素时，数组容量扩为 10。**
 
-> 补充：JDK6 new 无参构造的 `ArrayList` 对象时，直接创建了长度是 10 的 `Object[]` 数组 `elementData` 。
-
 add方法
 
 ~~~java
@@ -836,6 +857,8 @@ public boolean add(E e) {
 
 #### grow方法扩容
 
+minCapacity**为所需的最小容量**
+
 `int newCapacity = oldCapacity + (oldCapacity >> 1)`,所以 ArrayList 每次扩容之后容量都会变为原来的 1.5 倍左右（oldCapacity 为偶数就是 1.5 倍，否则是 1.5 倍左右）
 
 ~~~java
@@ -848,9 +871,7 @@ private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
  * ArrayList扩容的核心方法。
  */
 private void grow(int minCapacity) {
-    // oldCapacity为旧容量，newCapacity为新容量
     int oldCapacity = elementData.length;
-    // 将oldCapacity 右移一位，其效果相当于oldCapacity /2，
     // 我们知道位运算的速度远远快于整除运算，整句运算式的结果就是将新容量更新为旧容量的1.5倍，
     int newCapacity = oldCapacity + (oldCapacity >> 1);
 
@@ -909,14 +930,6 @@ private static int hugeCapacity(int minCapacity) {
 
 ~~~java
     // 我们发现 arraycopy 是一个 native 方法,接下来我们解释一下各个参数的具体意义
-    /**
-    *   复制数组
-    * @param src 源数组
-    * @param srcPos 源数组中的起始位置
-    * @param dest 目标数组
-    * @param destPos 目标数组中的起始位置
-    * @param length 要复制的数组元素的数量
-    */
     public static native void arraycopy(Object src,  int  srcPos,
                                         Object dest, int destPos,
                                         int length);
@@ -941,15 +954,15 @@ private static int hugeCapacity(int minCapacity) {
 
 **区别：**
 
-`arraycopy()` 需要目标数组，将原数组拷贝到你自己定义的数组里或者原数组，而且可以选择拷贝的起点和长度以及放入新数组中的位置 
+**`arraycopy()` 需要目标数组**，将原数组拷贝到你自己定义的数组里或者原数组，而且可以选择拷贝的起点和长度以及放入新数组中的位置 
 
-`copyOf()` 是系统自动在内部新建一个数组，并返回该数组。
+`copyOf()` 是系统自动在**内部新建一个数组**，并返回该数组。
 
 ## LinkedList
 
 ### [LinkedList 为什么不能实现 RandomAccess 接口？](#linkedlist-为什么不能实现-randomaccess-接口)
 
-`RandomAccess` 是一个标记接口，用来表明实现该接口的类支持随机访问（即可以通过索引快速访问元素）。由于 `LinkedList` 底层数据结构是链表，内存地址不连续，只能通过指针来定位，不支持随机快速访问，所以不能实现 `RandomAccess` 接口。
+`RandomAccess` 是一个标记接口，用来表明实现该接口的类支持随机访问（即可以通过索引快速访问元素）。由于 `LinkedList` 底层数据结构是链表，**内存地址不连续**，只能通过指针来定位，不支持随机快速访问，所以不能实现 `RandomAccess` 接口。
 
 ### 源码分析
 
@@ -961,10 +974,6 @@ public class LinkedList<E>
   //...
 }
 ~~~
-
-`LinkedList` 继承了 `AbstractSequentialList` ，而 `AbstractSequentialList` 又继承于 `AbstractList` 。
-
-阅读过 `ArrayList` 的源码我们就知道，`ArrayList` 同样继承了 `AbstractList` ， 所以 `LinkedList` 会有大部分方法和 `ArrayList` 相似。
 
 实现一下接口
 
@@ -1008,7 +1017,7 @@ public LinkedList(Collection<? extends E> c) {
 
 ### [插入元素](https://javaguide.cn/java/collection/linkedlist-source-code.html#插入元素)
 
-`LinkedList` 除了实现了 `List` 接口相关方法，还实现了 `Deque` 接口的很多方法，所以我们有很多种方式插入元素。既可以头插也可以尾插
+`LinkedList` 既可以头插也可以尾插
 
 ### [获取元素](#获取元素)
 
@@ -1174,13 +1183,19 @@ public interface RandomAccess {
 
 ### Set
 
+无序性：不等于随机性，是根据对象的hashcode值来进行决定
+
+不可重复性：指添加的元素按照 `equals()` 判断时 ，返回 false，需要同时重写 `equals()` 方法和 `hashCode()` 方法。
+
+以确保相等的对象具有相等的哈希码，并且哈希码相等的对象也必须根据`equals()`方法判断为相等
+
 #### Comparable 和 Comparator 的区别
 
 `Comparable` 接口和 `Comparator` 接口都是 Java 中用于排序的接口
 
-`Comparable` 接口实际上是出自`java.lang`包 它有一个 `compareTo(Object obj)`方法用来排序
+`Comparable` 接口实际上是出自`java.lang`包 它有一个 **compareTo(Object obj)**方法用来排序
 
-`Comparator`接口实际上是出自 `java.util` 包它有一个`compare(Object obj1, Object obj2)`方法用来排序
+`Comparator`接口实际上是出自 `java.util` 包它有一个**compare(Object obj1, Object obj2)**方法用来排序
 
 ~~~java
 Comparator 定制排序
@@ -1224,12 +1239,6 @@ public  class Person implements Comparable<Person> {
 }
 ~~~
 
-无序性：不等于随机性，是根据对象的hashcode值来进行决定
-
-不可重复性：指添加的元素按照 `equals()` 判断时 ，返回 false，需要同时重写 `equals()` 方法和 `hashCode()` 方法。
-
-以确保相等的对象具有相等的哈希码，并且哈希码相等的对象也必须根据`equals()`方法判断为相等
-
 ###  HashSet、LinkedHashSet 和 TreeSet 三者的异同
 
 都不是线程安全的，并且元素唯一
@@ -1249,7 +1258,7 @@ public  class Person implements Comparable<Person> {
 
 `ArrayDeque` 和 `LinkedList` 都实现了 `Deque` 接口，两者都具有队列的功能，但两者有什么区别呢？
 
-- `ArrayDeque` 是基于可变长的数组和双指针来实现，而 `LinkedList` 则通过链表来实现。
+- `ArrayDeque` 是**基于可变长的数组和双指针来实现，而 `LinkedList` 则通过链表来实现。**
 - `ArrayDeque` 不支持存储 `NULL` 数据，但 `LinkedList` 支持。
 - `ArrayDeque` 是在 JDK1.6 才被引入的，而`LinkedList` 早在 JDK1.2 时就已经存在。
 - `ArrayDeque` 插入时可能存在扩容过程, 不过均摊后的插入操作依然为 O(1)。虽然 `LinkedList` 不需要扩容，但是每次插入数据时均需要申请新的堆空间，均摊性能相比更慢。
@@ -1273,7 +1282,7 @@ ArrayBlockingQueue，LinkedBlockingQueue，PriorityBlockingQueue
 
 ### ArrayBlockingQueue 和 LinkedBlockingQueue 有什么区别
 
-`它们都是线程安全的
+它们都是线程安全的
 
 区别：
 
@@ -1409,13 +1418,17 @@ private void enqueue(E x) {
 
 ### HashMap和Hashtable的区别
 
-线程安全性：HashMap是不安全的，HashTable是安全的，`Hashtable` 内部的方法基本都经过`synchronized` 修饰。
+线程安全性：HashMap是不安全的。
 
-**效率：** 因为线程安全的问题，`HashMap` 要比 `Hashtable` 效率高一点。
+HashTable是安全的，`Hashtable` 内部的方法基本都经过`synchronized` 修饰。
 
 HashMap**对 Null key 和 Null value 支持**，Hashtable则会抛出异常
 
-**初始容量大小和每次扩充容量大小的不同**：HashMap默认大小为16，扩容策略为2倍。如果不使用默认大小容量，`HashMap` 会将其扩充为 2 的幂次方大小
+**初始容量大小和每次扩充容量大小的不同**：
+
+HashMap默认大小为16，扩容策略为2倍。
+
+如果不使用默认大小容量，`HashMap` 会将其扩充为 2 的幂次方大小
 
 这个方法保证了大小为2的幂次方。先将cap-1，通过连续进行按位或和无符号右移操作，确保在目标容量的二进制表示中，除了最高位的1之外，所有的位都被设置为1，最后加一返回就变成了2的幂次方了
 
@@ -1439,13 +1452,7 @@ HashMap**对 Null key 和 Null value 支持**，Hashtable则会抛出异常
 
 ### 和TreeMap的区别
 
-`TreeMap`它还实现了`NavigableMap`接口和`SortedMap` 接口。
-
-实现 `NavigableMap` 接口让 `TreeMap` 有了对集合内元素的搜索的能力。
-
 基于红黑树数据结构的属性实现的，红黑树保持平衡状态，从而保证了搜索操作的时间复杂度为 O(log n)
-
-实现`SortedMap`接口让 `TreeMap` 有了对集合中的元素根据键排序的能力。
 
 **相比于`HashMap`来说， `TreeMap` 主要多了对集合中的元素根据键排序的能力以及对集合内元素的搜索的能力**
 
@@ -1540,7 +1547,7 @@ ConcurrentHashMap 底层数据结构和HashMap一样，Hashtable 则是数组加
 
 **`Hashtable`(同一把锁)** :使用 `synchronized` 来保证线程安全，效率非常低下。当一个线程访问同步方法时，其他线程也访问同步方法，可能会进入阻塞或轮询状态，如使用 put 添加元素，另一个线程不能使用 put 添加元素，也不能使用 get，竞争会越来越激烈效率越低。
 
-到了 JDK1.8 的时候，`ConcurrentHashMap` 已经摒弃了 `Segment`（分段锁，只锁容器的一部分数据） 的概念，而是直接用 `Node` 数组+链表+红黑树的数据结构来实现，并发控制使用 `synchronized` 和 CAS 来操作。（JDK1.6 以后 `synchronized` 锁做了很多优化） 整个看起来就像是优化过且线程安全的 `HashMap`，虽然在 JDK1.8 中还能看到 `Segment` 的数据结构，但是已经简化了属性，只是为了兼容旧版本；
+JDK1.8 的时候，`ConcurrentHashMap` 已经摒弃了 `Segment`（分段锁，只锁容器的一部分数据） 的概念，而是直接用 `Node` 数组+链表+红黑树的数据结构来实现，并发控制使用 `synchronized` 和 CAS 来操作。 整个看起来就像是优化过且线程安全的 `HashMap`，虽然在 JDK1.8 中还能看到 `Segment` 的数据结构，但是已经简化了属性，只是为了兼容旧版本；
 
 #### ConcurrentHashMap线程安全具体实现
 
@@ -2122,12 +2129,6 @@ ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {
 `ThreadLocalMap` 中使用的 key 为 `ThreadLocal` 的弱引用，而 value 是强引用。所以，如果 `ThreadLocal` 没有被外部强引用的情况下，在垃圾回收的时候，key 会被清理掉，而 value 不会被清理掉。
 
 这样一来value 永远无法被 GC 回收，这个时候就可能会产生内存泄露。`ThreadLocalMap` 实现中已经考虑了这种情况，在调用 `set()`、`get()`、`remove()` 方法的时候，会清理掉 key 为 null 的记录。使用完 `ThreadLocal`方法后最好手动调用`remove()`方法
-
-**弱引用介绍：**
-
-> 弱引用与软引用的区别在于：只具有弱引用的对象拥有更短暂的生命周期。在垃圾回收器线程扫描它 所管辖的内存区域的过程中，一旦发现了只具有弱引用的对象，不管当前内存空间足够与否，都会回收它的内存。不过，由于垃圾回收器是一个优先级很低的线程， 因此不一定会很快发现那些只具有弱引用的对象。
->
-> 弱引用可以和一个引用队列（ReferenceQueue）联合使用，如果弱引用所引用的对象被垃圾回收，Java 虚拟机就会把这个弱引用加入到与之关联的引用队列中。
 
 ### 线程池
 
@@ -2942,7 +2943,7 @@ JDK1.4 中新加入的 **NIO（Non-Blocking I/O，也被称为 New I/O）**，�
 
 <img src="https://oss.javaguide.cn/github/javaguide/java/jvm/access-location-of-object-handle-direct-pointer.png" alt="对象的访问定位-直接指针" style="zoom:67%;" />
 
-使用句柄来访问的最大好处是 reference 中存储的是稳定的句柄地址，在对象被移动时只会改变句柄中的实例数据指针，而 reference 本身不需要修改。使用直接指针访问方式最大的好处就是速度快，它节省了一次指针定位的时间开销
+使用句柄来访问的最大好处是 reference 中存储的是稳定的句柄地址，在对象被移动时只会改变句柄中的实例数据指针，而 reference 本身不需要修改。使用直接指针访问方式最大的好处就是速度快，它节省了一次指针定位的时间开销。主要用的还是直接指针访问
 
 
 
@@ -3341,4 +3342,50 @@ public abstract class ClassLoader {
 线程线程上下文类加载器的原理是将一个类加载器保存在线程私有数据里，跟线程绑定，然后在需要的时候取出来使用。这个类加载器通常是由应用程序或者容器（如 Tomcat）设置的
 
 `Java.lang.Thread` 中的`getContextClassLoader()`和 `setContextClassLoader(ClassLoader cl)`分别用来获取和设置线程的上下文类加载器。如果没有通过`setContextClassLoader(ClassLoader cl)`进行设置的话，线程将继承其父线程的上下文类加载器
+
+### 数据结构的堆
+
+堆是一种满足以下条件的树：
+
+堆中的**每一个节点值都大于等于（或小于等于）子树中所有节点的值**。或者说，任意一个节点的值都大于等于（或小于等于）所有子节点的值。
+
+注意是子树，不是整个树
+
+**相对于有序数组而言，堆的主要优势在于插入和删除数据效率较高**，Heap 初始化的时间复杂度为 `O(n)`,插入删除操作为O(log(n))
+
+堆的存储可以用数组来实现（类似于完全二叉树的存储，若根结点的序号为 1，那么对于树中任意节点 i，其左子节点序号为 `2*i`，右子节点序号为 `2*i+1`)
+
+### [堆的操作总结](#堆的操作总结)
+
+- **插入元素**：先将元素放至数组末尾，再自底向上堆化，将末尾元素上浮
+- **删除堆顶元素**：删除堆顶元素，将末尾元素放至堆顶，再自顶向下堆化(逐一比较)，将堆顶元素下沉。也可以自底向上堆化，只是会产生“气泡”，浪费存储空间。最好采用自顶向下堆化的方式
+
+## 布隆过滤器
+
+Bloom Filter 会使用一个较大的 bit 数组来保存所有的数据，数组中的每个元素都只占用 1 bit ，并且每个元素只能是 0 或者 1（代表 false 或者 true）
+
+![位数组](https://oss.javaguide.cn/github/javaguide/cs-basics/algorithms/bloom-filter-bit-table.png)
+
+原理介绍
+
+**当一个元素加入布隆过滤器中的时候，会进行如下操作：**
+
+1. 使用布隆过滤器中的哈希函数对元素值进行计算，得到哈希值（有几个哈希函数得到几个哈希值）。
+2. 根据得到的哈希值，在位数组中把对应下标的值置为 1。
+
+![Bloom Filter 的简单原理示意图](https://oss.javaguide.cn/github/javaguide/cs-basics/algorithms/bloom-filter-simple-schematic-diagram.png)
+
+**当我们需要判断一个元素是否存在于布隆过滤器的时候，会进行如下操作：**
+
+1. 对给定元素再次进行相同的哈希计算；
+2. 得到值之后判断位数组中的每个元素是否都为 1，如果值都为 1，那么说明这个值在布隆过滤器中，如果存在一个值不为 1，说明该元素不在布隆过滤器中。
+
+**布隆过滤器说某个元素存在，小概率会误判。布隆过滤器说某个元素不在，那么这个元素一定不在**
+
+### 布隆器使用场景
+
+- 判断给定数据是否存在
+- 去重：比如爬给定网址的时候对已经爬取过的 URL 去重、对巨量的 QQ 号/订单号去重
+
+主要用于海量数据的存在性问题
 
