@@ -1486,31 +1486,13 @@ jdk1.8的底层，当链表长度大于8时就会转换成红黑树
 
 多线程下建议不要使用hashMap来操作数据，可能会出现覆盖数据的问题。并发环境下，推荐使用 `ConcurrentHashMap` 
 
-举个例子
+**举个例子**
 
 两个线程 1,2 同时进行 put 操作，并且发生了哈希冲突（hash 函数计算出的插入下标是相同的）。
 
 不同的线程可能在不同的时间片获得 CPU 执行的机会，当前线程 1 执行完哈希冲突判断后，由于时间片耗尽挂起。线程 2 先完成了插入操作。
 
 随后，线程 1 获得时间片，由于之前已经进行过 hash 碰撞的判断，所有此时会直接进行插入，这就导致线程 2 插入的数据被线程 1 覆盖了。
-
-~~~java
-public V put(K key, V value) {
-    return putVal(hash(key), key, value, false, true);
-}
-
-final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
-                   boolean evict) {
-    // ...
-    // 判断是否出现 hash 碰撞
-    // (n - 1) & hash 确定元素存放在哪个桶中，桶为空，新生成结点放入桶中(此时，这个结点是放在数组中)
-    if ((p = tab[i = (n - 1) & hash]) == null)
-        tab[i] = newNode(hash, key, value, null);
-    // 桶中已经存在元素（处理hash冲突）
-    else {
-    // ...
-}
-~~~
 
 还有一种情况是这两个线程同时 `put` 操作导致 `size` 的值不正确，进而导致数据覆盖的问题：
 
@@ -1541,13 +1523,15 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 
 ### ConcurrentHashMap 和 Hashtable 的区别
 
-ConcurrentHashMap 底层数据结构和HashMap一样，Hashtable 则是数组加链表
+ConcurrentHashMap 底层数据结构是数组加链表和红黑树，Hashtable 则是数组加链表
 
 **实现线程安全的方式（重要）**
 
-**`Hashtable`(同一把锁)** :使用 `synchronized` 来保证线程安全，效率非常低下。当一个线程访问同步方法时，其他线程也访问同步方法，可能会进入阻塞或轮询状态，如使用 put 添加元素，另一个线程不能使用 put 添加元素，也不能使用 get，竞争会越来越激烈效率越低。
+**`Hashtable`(同一把锁)** :使用 `synchronized` 来保证线程安全，效率非常低下。
 
-JDK1.8 的时候，`ConcurrentHashMap` 已经摒弃了 `Segment`（分段锁，只锁容器的一部分数据） 的概念，而是直接用 `Node` 数组+链表+红黑树的数据结构来实现，并发控制使用 `synchronized` 和 CAS 来操作。 整个看起来就像是优化过且线程安全的 `HashMap`，虽然在 JDK1.8 中还能看到 `Segment` 的数据结构，但是已经简化了属性，只是为了兼容旧版本；
+当一个线程访问同步方法时，其他线程也访问同步方法，可能会进入阻塞或轮询状态，如使用 put 添加元素，另一个线程不能使用 put 添加元素，也不能使用 get，竞争会越来越激烈效率越低。
+
+JDK1.8 的时候，`ConcurrentHashMap` 已经摒弃了 `Segment`（分段锁，只锁容器的一部分数据） 的概念，而是直接用 `Node` 数组+链表+红黑树的数据结构来实现，并发控制使用 `synchronized` 和 CAS 来操作。 **整个看起来就像是优化过且线程安全的 `HashMap`**，虽然在 JDK1.8 中还能看到 `Segment` 的数据结构，但是已经简化了属性，只是为了兼容旧版本；
 
 #### ConcurrentHashMap线程安全具体实现
 
@@ -1569,7 +1553,7 @@ JDK1.8 的时候，`ConcurrentHashMap` 已经摒弃了 `Segment`（分段锁，�
 
 `ConcurrentHashMap` 取消了 `Segment` 分段锁，采用 `Node + CAS + synchronized` 来保证并发安全。
 
-`synchronized` 只锁定当前链表或红黑二叉树的首节点，这样只要 hash 不冲突，就不会产生并发，就不会影响其他 Node 的读写，效率大幅提升。
+**`synchronized` 只锁定当前链表或红黑二叉树的首节点**，这样只要 hash 不冲突，就不会产生并发，就不会影响其他 Node 的读写，效率大幅提升。
 
 CAS操作：
 
@@ -1579,7 +1563,7 @@ CAS是Compare And Swap的缩写，即比较与交换，通常指的==是一种�
 
 **`sun.misc`包下的`Unsafe`类提供了`compareAndSwapObject`、`compareAndSwapInt`、`compareAndSwapLong`方法来实现的对`Object`、`int`、`long`类型的 CAS 操作**
 
-JDK1.8相比于JDK1.7并发度更大（为Node数组大小），线程安全实现方式不一样，Hash碰撞解决方法不一样，1.7为拉链法，1.8为拉链法结合红黑树。**并且他们都不能存储null值key和value，会产生二义性（get返回null无法判断是否有）**
+JDK1.8相比于JDK1.7并发度更大（为Node数组大小），线程安全实现方式不一样，Hash碰撞解决方法不一样，**1.7为拉链法**，1.8为拉链法结合红黑树。**并且他们都不能存储null值key和value，会产生二义性（get返回null无法判断是否有）**
 
 `ConcurrentHashMap` 提供了一些原子性的复合操作，如 `putIfAbsent`、`compute`、`computeIfAbsent` 、`computeIfPresent`、`merge`等。
 
@@ -1635,7 +1619,7 @@ map.putIfAbsent(key, anotherValue);
 
 ![常见的三种线程模型](https://oss.javaguide.cn/github/javaguide/java/concurrent/three-types-of-thread-models.png)
 
-Java线程采用的是一对一的线程模型
+**Java线程采用的是一对一的线程模型**
 
 ### java内存区域
 
@@ -1647,7 +1631,7 @@ Java线程采用的是一对一的线程模型
 
 程序计数器用于记录当前线程执行的位置，依次读取指令。程序计数器私有主要是为了**线程切换后能恢复到正确的执行位置**
 
-**虚拟机栈：** 每个 Java 方法在执行之前会创建一个栈帧用于存储局部变量表、操作数栈、常量池引用等信息。从方法调用直至执行完成的过程，就对应着一个栈帧在 Java 虚拟机栈中入栈和出栈的过程。
+**虚拟机栈：** 每个 Java 方法在执行之前会创建一个栈帧**用于存储局部变量表、操作数栈、常量池引用等信息**。从方法调用直至执行完成的过程，就对应着一个栈帧在 Java 虚拟机栈中入栈和出栈的过程。
 
 **本地方法栈：** 和虚拟机栈所发挥的作用非常相似，区别是：**虚拟机栈为虚拟机执行 Java 方法 （也就是字节码）服务，而本地方法栈则为虚拟机使用到的 Native 方法服务。** 在 HotSpot 虚拟机中和 Java 虚拟机栈合二为一。
 
@@ -1663,7 +1647,7 @@ Java线程采用的是一对一的线程模型
 
 ### 为什么使用多线程
 
-- **从计算机底层来说：** 线程可以比作是轻量级的进程，是程序执行的最小单位,线程间的切换和调度的成本远远小于进程。另外，多核 CPU 时代意味着多个线程可以同时运行，这减少了线程上下文切换的开销。
+- **从计算机底层来说：** 线程可以比作是轻量级的进程，**是程序执行的最小单位**,线程间的切换和调度的成本低。另外，多核 CPU 时代意味着多个线程可以同时运行，这减少了线程上下文切换的开销。
 
 ​	并且可以提高Cpu的使用率
 
@@ -1711,7 +1695,7 @@ JVM没有去分这两种状态，是因为线程得到的时间分片非常小�
 
 3.循环等待
 
-4.请求与保持：一个线程因请求资源而阻塞时，对已获得的资源保持不放。
+4.请求与保持：**一个线程因请求资源而阻塞时，对已获得的资源保持不放**。就是占有且等待
 
 #### 预防和避免死锁
 
@@ -1737,7 +1721,7 @@ JVM没有去分这两种状态，是因为线程得到的时间分片非常小�
 
 - **`sleep()` 方法没有释放锁，而 `wait()` 方法释放了锁** 。
 - `wait()` 通常被用于线程间交互/通信，`sleep()`通常被用于暂停执行。
-- `wait()` 方法被调用后，线程不会自动苏醒，需要别的线程调用同一个对象上的 `notify()`或者 `notifyAll()` 方法。`sleep()`方法执行完成后，线程会自动苏醒，或者也可以使用 `wait(long timeout)` 超时后线程会自动苏醒。
+- `wait()` 方法被调用后，线程不会自动苏醒，**需要别的线程调用同一个对象上的 `notify()`或者 `notifyAll()` 方法**。`sleep()`方法执行完成后，线程会自动苏醒，或者也可以使用 `wait(long timeout)` 超时后线程会自动苏醒。
 - `sleep()` 是 `Thread` 类的静态本地方法，`wait()` 则是 `Object` 类的本地方法。因为object类方法可以使线程种的对象放弃对象锁，而thread类只是让当前线程暂停
 
 如果直接使用Thread.run并不会以多线程执行，只有start是启动多线程
@@ -1745,6 +1729,8 @@ JVM没有去分这两种状态，是因为线程得到的时间分片非常小�
 ## JMM（Java 内存模型）详解
 
 JMM(Java 内存模型)主要定义了对于一个共享变量，当另一个线程对这个共享变量执行写操作后，这个线程对这个共享变量的可见性。
+
+**JMM主要用来确保多线程程序的正确性，保证线程之间共享变量的可见性、有序性和一致性**
 
 ## 从 CPU 缓存模型说起
 
@@ -1775,11 +1761,11 @@ JMM(Java 内存模型)主要定义了对于一个共享变量，当另一个线�
 
 **主内存**：所有线程创建的实例对象都存放在主内存中，不管该实例对象是成员变量，还是局部变量，类信息、常量、静态变量都是放在主内存中。
 
-**本地内存**：每个线程都有一个私有的本地内存，本地内存存储了该线程以读 / 写共享变量的副本
+**本地内存**：**每个线程都有一个私有的本地内存**，本地内存存储了该线程以读 / 写共享变量的副本
 
 JMM内存模型
 
-![JMM(Java 内存模型)](https://oss.javaguide.cn/github/javaguide/java/concurrent/jmm.png)
+<img src="https://oss.javaguide.cn/github/javaguide/java/concurrent/jmm.png" alt="JMM(Java 内存模型)" style="zoom:50%;" />
 
 线程 1 与线程 2 之间如果要进行通信的话，必须要经历下面 2 个步骤：
 
@@ -1816,7 +1802,7 @@ JMM内存模型
 
  **Java 内存区域和内存模型是完全不一样的两个东西**：
 
-- JVM 内存结构和 Java 虚拟机的运行时区域相关，定义了 JVM 在运行时如何分区存储程序数据，就比如说堆主要用于存放对象实例。
+- JVM 内存结构和 Java 虚拟机的运行时区域相关，**定义了 JVM 在运行时如何分区存储程序数据**，就比如说堆主要用于存放对象实例。
 - **Java 内存模型和 Java 的并发编程相关，抽象了线程和主内存之间的关系就比如说线程之间的共享变量必须存储在主内存中，规定了从 Java 源代码到 CPU 可执行指令的这个转化过程要遵守哪些和并发相关的原则和规范**，其主要目的是为了简化多线程编程，增强程序可移植性的。
 
 ### happens-before原则是什么
@@ -1825,13 +1811,13 @@ JMM内存模型
 
 **原则设计思想**
 
-为了对编译器和处理器的约束尽可能少，只要不改变程序的执行结果（单线程程序和正确执行的多线程程序），编译器和处理器怎么进行重排序优化都行。
+为了对编译器和处理器的约束尽可能少，**只要不改变程序的执行结果（单线程程序和正确执行的多线程程序），编译器和处理器怎么进行重排序优化都行**。
 
-对于会改变程序执行结果的重排序，JMM 要求编译器和处理器必须禁止这种重排序。
+**对于会改变程序执行结果的重排序，JMM 要求编译器和处理器必须禁止这种重排序。**
 
 **原则定义**
 
-如果一个操作 happens-before 另一个操作，那么第一个操作的执行结果将对第二个操作可见，并且第一个操作的执行顺序排在第二个操作之前。
+**如果一个操作 happens-before 另一个操作，那么第一个操作的执行结果将对第二个操作可见，并且第一个操作的执行顺序排在第二个操作之前**。
 
 两个操作之间存在 happens-before 关系，并不意味着 Java 平台的具体实现必须要按照 happens-before 关系指定的顺序来执行。如果重排序之后的执行结果，与按 happens-before 关系来执行的结果一致，那么 JMM 也允许这样的重排序。
 
@@ -1856,7 +1842,7 @@ JMM内存模型
 ### 总结
 
 - Java 是最早尝试提供内存模型的语言，其主要目的是为了简化多线程编程，增强程序可移植性的。
-- CPU 可以通过制定缓存一致协议（比如 [MESI 协议open in new window](https://zh.wikipedia.org/wiki/MESI协议)）来解决内存缓存不一致性问题。
+- CPU 可以通过制定缓存一致协议来解决内存缓存不一致性问题。
 - **指令重排序可以保证串行语义一致，但是没有义务保证多线程间的语义也一致** ，所以在多线程下，指令重排序可能会导致一些问题。
 - 你可以把 JMM 看作是 Java 定义的并发编程相关的一组规范，除了抽象了线程和主内存之间的关系之外，其还规定了从 Java 源代码到 CPU 可执行指令的这个转化过程要遵守哪些和并发相关的原则和规范，其主要目的是为了简化多线程编程，增强程序可移植性的。
 - JSR 133 引入了 happens-before 这个概念来描述两个操作之间的内存可见性。
@@ -1869,7 +1855,7 @@ JMM内存模型
 
 <img src="https://oss.javaguide.cn/github/javaguide/java/concurrent/jmm2.png" alt="JMM(Java 内存模型)强制在主存中进行读取" style="zoom:50%;" />
 
-`volatile` 关键字能保证数据的可见性，但不能保证数据的原子性。除了保证数据可见性还可以**防止 JVM 的指令重排序。**
+`volatile` 关键字能保证数据的可见性，**但不能保证数据的原子性**。除了保证数据可见性还可以**防止 JVM 的指令重排序。**
 
 **通过两种机制来保证内存可见性:**
 
@@ -1924,7 +1910,7 @@ public class Singleton {
 
 悲观锁通常多用于写比较多的情况（多写场景，竞争激烈），乐观锁通常多用于写比较少的情况（多读场景，竞争较少）。不过，乐观锁主要针对的对象是单个共享变量
 
-**乐观锁实现的CAS有什么问题**
+#### **乐观锁实现的CAS有什么问题**
 
 **ABA问题，误认为A值没有被修改过。解决思路是可以加上版本号机制**
 
@@ -1944,7 +1930,7 @@ CAS 经常会用到自旋操作来进行重试，也就是不成功就一直循�
 
 1. 实例方法：进入同步代码前要获得 **当前对象实例的锁** 。
 
-2. 静态方法：进入同步代码前要获得 **当前 class 的锁**。给类加锁，影响的是静态同步方法的访问，
+2. 静态方法：进入同步代码前要获得 **当前 class 的锁**。**给类加锁，影响的是静态同步方法的访问，**
 
    这是因为静态成员不属于任何一个实例对象，归整个类所有，不依赖于类的特定实例，被类的所有实例共享。
 
@@ -1980,11 +1966,11 @@ public class SynchronizedDemo {
 
 ![image-20240420122844002](C:\Users\15282\AppData\Roaming\Typora\typora-user-images\image-20240420122844002.png)
 
-`synchronized` 同步语句块的实现使用的是 `monitorenter` 和 `monitorexit` 指令，其中 `monitorenter` 指令指向同步代码块的开始位置，`monitorexit` 指令则指明同步代码块的结束位置。
+**`synchronized` 同步语句块的实现使用的是 `monitorenter` 和 `monitorexit` 指令，其中 `monitorenter` 指令指向同步代码块的开始位置，`monitorexit` 指令则指明同步代码块的结束位置。**
 
 字节码中包含一个 `monitorenter` 指令以及两个 `monitorexit` 指令，这是为了保证锁在同步代码块代码正常执行以及出现异常的这两种情况下都能被正确释放。
 
-在执行`monitorenter`时，会尝试获取对象的锁，如果锁的计数器为 0 则表示锁可以被获取，获取后将锁计数器设为 1 也就是加 1。
+**在执行`monitorenter`时，会尝试获取对象的锁，如果锁的计数器为 0 则表示锁可以被获取，获取后将锁计数器设为 1 也就是加 1。**
 
 <img src="https://oss.javaguide.cn/github/javaguide/java/concurrent/synchronized-get-lock-code-block.png" alt="执行 monitorenter 获取锁" style="zoom: 67%;" />
 
@@ -2009,7 +1995,7 @@ public class SynchronizedDemo2 {
 
 两者是互补的存在
 
-- `volatile` 关键字是线程同步的轻量级实现，所以 `volatile`性能肯定比`synchronized`关键字要好 。但是 `volatile` 关键字只能用于变量而 `synchronized` 关键字可以修饰方法以及代码块 。
+- `volatile` 关键字是线程同步的轻量级实现，所以 `volatile`性能肯定比`synchronized`关键字要好 。但是 **`volatile` 关键字只能用于变量**而 `synchronized` 关键字可以修饰方法以及代码块 。
 - `volatile` 关键字能保证数据的可见性，但不能保证数据的原子性。`synchronized` 关键字两者都能保证。
 - `volatile`关键字主要用于解决变量在多个线程之间的可见性，而 `synchronized` 关键字解决的是多个线程之间访问资源的同步性。
 
@@ -2033,7 +2019,7 @@ public ReentrantLock(boolean fair) {
 - **公平锁** : 锁被释放之后，先申请的线程先得到锁。性能较差一些，因为公平锁为了保证时间上的绝对顺序，上下文切换更频繁。
 - **非公平锁**：锁被释放之后，后申请的线程可能会先获取到锁，是随机或者按照其他优先级排序的。性能更好，但可能会导致某些线程永远无法获取到锁
 
-### [synchronized 和 ReentrantLock 有什么区别？](https://javaguide.cn/java/concurrent/java-concurrent-questions-02.html#synchronized-和-reentrantlock-有什么区别)
+### synchronized 和 ReentrantLock 有什么区别？
 
 #### 两者都是可重入锁
 
@@ -2067,7 +2053,7 @@ public ReentrantLock(boolean fair) {
 
 ### ThreadLocal
 
-实现每个线程有自身的本地变量。
+**实现每个线程有自身的本地变量。**
 
 #### 原理
 
@@ -2085,7 +2071,9 @@ public class Thread implements Runnable {
 }
 ~~~
 
-`Thread` 类中有一个 `threadLocals` 和 一个 `inheritableThreadLocals` 变量，它们都是 `ThreadLocalMap` 类型的变量。,我们可以把 `ThreadLocalMap` 理解为`ThreadLocal` 类实现的定制化的 `HashMap`。只有当前线程调用 `ThreadLocal` 类的 `set`或`get`方法时才创建它们（threadLocalMap）。
+`Thread` 类中有一个 `threadLocals` 和 一个 `inheritableThreadLocals` 变量，都是 `ThreadLocalMap` 类型的变量。
+
+我们可以把 `ThreadLocalMap` 理解为`ThreadLocal` 类实现的定制化的 `HashMap`。只有当前线程调用 `ThreadLocal` 类的 `set`或`get`方法时才创建它们（threadLocalMap）。
 
 **因为`ThreadLocalMap`是`ThreadLocal`的静态内部类**
 
@@ -2112,12 +2100,6 @@ ThreadLocalMap getMap(Thread t) {
 
 **每个`Thread`中都具备一个`ThreadLocalMap`，而`ThreadLocalMap`可以存储以`ThreadLocal`为 key ，Object 对象为 value 的键值对。**
 
-~~~java
-ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {
-    //......
-}
-~~~
-
 `ThreadLocalMap`的 key 就是 `ThreadLocal`对象，value 就是 `ThreadLocal` 对象调用`set`方法设置的值。
 
 <img src="https://oss.javaguide.cn/github/javaguide/java/concurrent/threadlocal-data-structure.png" alt="ThreadLocal 数据结构" style="zoom:67%;" />
@@ -2126,7 +2108,9 @@ ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {
 
 #### ThreadLocal的内存泄漏
 
-`ThreadLocalMap` 中使用的 key 为 `ThreadLocal` 的弱引用，而 value 是强引用。所以，如果 `ThreadLocal` 没有被外部强引用的情况下，在垃圾回收的时候，key 会被清理掉，而 value 不会被清理掉。
+`ThreadLocalMap` 中使用的 key 为 `ThreadLocal` 的弱引用，而 value 是强引用。
+
+所以，如果 `ThreadLocal` 没有被外部强引用的情况下，在垃圾回收的时候，key 会被清理掉，而 value 不会被清理掉。
 
 这样一来value 永远无法被 GC 回收，这个时候就可能会产生内存泄露。`ThreadLocalMap` 实现中已经考虑了这种情况，在调用 `set()`、`get()`、`remove()` 方法的时候，会清理掉 key 为 null 的记录。使用完 `ThreadLocal`方法后最好手动调用`remove()`方法
 
@@ -2201,6 +2185,8 @@ ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {
 - `ThreadPoolExecutor.DiscardOldestPolicy`：此策略将丢弃最早的未处理的任务请求。
 
 #### 常用的阻塞队列
+
+<img src="https://img-blog.csdnimg.cn/20210327185057427.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0htajA1MDExNw==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" style="zoom: 80%;" />
 
 新任务来的时候会先判断当前运行的线程数量是否达到核心线程数，如果达到的话，新任务就会被存放在队列中。
 
