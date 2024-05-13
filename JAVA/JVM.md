@@ -14,7 +14,7 @@
 
   声明事务是通过配置方式来管理事务，编程事务通过编写代码显式地管理事务的开始、提交和回滚。（比较少用）
 
-java事务管理类型
+**java事务管理类型**
 
  JDBC事务、JTA（Java Transaction API）事务、容器事务
 
@@ -32,18 +32,21 @@ Java事务API（Java Transaction API，简称JTA） Java事务服务（Java Tran
 
 JTA和JTS一起，为J2EE平台提供了[分布式事务](https://cloud.tencent.com/product/dtf?from_column=20065&from=20065)服务。JTA只提供接口，没有具体的实现，需要J2EE服务提供商根据JTS规范提供，
 
-扩展： 标准的分布式事务（Distributed Transaction） 一个事务管理器（Transaction）
-
 ### spring声明事务实现
 
 开启声明事务用的是`@Transactional` ，本质上是使用的 代理和AOP来实现。
 
-​	**事务拦截器链（Interceptor Chain）**：Spring的声明式事务依赖于AOP技术，在运行时动态生成代理对象并创建事务拦截器链。在方法调用链中，每个事务拦截器都会被依次调用，并根据事务属性的定义决定是否开启、提交或回滚事务。
-​	**事务切点（Transaction Pointcut）**：事务切点定义了哪些方法需要被事务拦截器拦截并应用事务逻辑。
-​	**事务属性解析**：在声明式事务中，事务属性可以通过注解（如@Transactional）或配置文件来指定。事务属性包括隔离级别、传播行为、超时设置等。
-​	**事务管理器（Transaction Manager）**：事务管理器是Spring框架的核心组件之一。它负责处理实际的事务管理操作，与底层的数据访问技术（如JDBC、Hibernate等）进行交互。事务管理器负责事务的创建、提交和回滚，并与当前线程进行绑定。
-​	**事务同步器（Transaction Synchronization）**：事务同步器用于在事务的不同阶段注册回调方法。在事务提交或回滚时，事务同步器会触发注册的回调方法，以执行一些额外的操作。例如，清理数据库连接、提交缓存数据等。Spring利用事务同步器来确保与事务相关的资源的正确管理和释放。
-​	**事务切面（Transaction Aspect）**：事务切面是由事务拦截器和事务切点组成的，它定义了在目标方法执行前后应用事务逻辑的规则。事务切面通过AOP技术将事务管理逻辑与业务逻辑进行解耦。当目标方法被调用时，事务切面会根据事务属性的定义，决定是否开启、提交。
+1. **创建代理对象**：Spring容器启动，检查配置的事务管理器和使用@Transactional的注解的Bean，然后生成一个代理对象
+
+2. **动态织入事务管理逻辑**：在代理对象中，当这个@Transactional注解所标识的方法被调用时会被代理对象拦截
+
+   然后前后织入事务管理逻辑。这些逻辑包括开启事务、方法执行、提交事务或回滚事务等。
+
+3. **事务边界控制**：当客户端调用被@Transactional注解标识的方法时，实际上是调用了代理对象的方法。代理对象在方法执行前会启动事务，在方法执行后根据方法执行情况决定是提交事务还是回滚事务。
+
+4. **事务传播行为**：Spring事务管理器支持不同的事务传播行为，例如REQUIRED、REQUIRES_NEW、NESTED等。Spring AOP会根据@Transactional注解中设置的事务传播行为来决定是否需要创建新的事务，以及如何处理嵌套事务。
+
+总的来说，Spring AOP通过动态代理技术，在方法调用前后织入事务管理逻辑，从而实现了对事务的管理。这种方式使得开发者无需手动编写事务管理代码，大大简化了事务管理的工作
 
 ### @Transactional 注解的参数
 
@@ -2637,7 +2640,7 @@ IO 模型一共有 5 种：**同步阻塞 I/O**、**同步非阻塞 I/O**、**I/
 
 同步阻塞 IO 模型中，应用程序发起 read 调用后，会一直阻塞，直到内核把数据拷贝到用户空间
 
-#### NIO[Non-blocking/New I/O]
+#### NIO[Non-blocking/New I/O]（IO多路复用指的是一个进程/线程可以同时监视多个文件描述符（含socket连接），一旦其中的一个或者多个文件描述符可读或者可写，该监听进程/线程能够进行IO事件的查询）
 
 Java 中的 NIO 可以看作是 **I/O 多路复用模型**，不属于同步非阻塞IO模型
 
@@ -2655,7 +2658,7 @@ IO多路复用模型
 
 IO 多路复用模型中，线程首先发起 select 调用，询问内核数据是否准备就绪，等内核把数据准备好了，用户线程再发起 read 调用。read 调用的过程（数据从内核空间 -> 用户空间）还是阻塞的。
 
-- **select 调用**：内核提供的系统调用，它支持一次查询多个系统调用的可用状态。几乎所有的操作系统都支持。
+- **select 调用**：**内核提供的系统调用**，它支持一次查询多个系统调用的可用状态。几乎所有的操作系统都支持。
 - **IO 多路复用模型，通过减少无效的系统调用，减少了对 CPU 资源的消耗**
 
 <img src="https://oss.javaguide.cn/github/javaguide/java/nio/channel-buffer-selector.png" alt="Buffer、Channel和Selector三者之间的关系" style="zoom:67%;" />
@@ -2682,15 +2685,19 @@ IO 多路复用模型中，线程首先发起 select 调用，询问内核数据
 
 <img src="https://oss.javaguide.cn/github/javaguide/java/nio/channel-buffer-selector.png" alt="Buffer、Channel和Selector三者之间的关系" style="zoom:67%;" />
 
-**Buffer（缓冲区）**：NIO 读写数据都是通过缓冲区进行操作的。读操作的时候将 Channel 中的数据填充到 Buffer 中，而写操作时将 Buffer 中的数据写入到 Channel 中。
+**Buffer（缓冲区）**：NIO 读写数据都是通过缓冲区进行操作的。
 
-**Channel（通道）**：Channel 是一个双向的、可读可写的数据传输通道，NIO 通过 Channel 来实现数据的输入输出。通道是一个抽象的概念，它可以代表文件、套接字或者其他数据源之间的连接。
+对通道的读操作：Channel 中的数据填充到 Buffer 中，
+
+对通道的写操作：将 Buffer 中的数据写入到 Channel 中。
+
+**Channel（通道）**：Channel 是一个**双向的、可读可写的数据传输通道**(不同于inputstream流单向的)，NIO 通过 Channel 来实现数据的输入输出。**通道是一个抽象的概念**，它可以代表文件、套接字或者其他数据源之间的连接。
 
 **Selector（选择器）**：允许一个线程处理多个 Channel，基于事件驱动的 I/O 多路复用模型。所有的 Channel 都可以注册到 Selector 上，由 Selector 来分配线程来处理事件。
 
 在 Java 1.4 的 NIO 库中，**所有数据都是用缓冲区处理的，读写都会将数据放到缓存区再进行处理**。
 
-Buffer差不多是一个数组
+Buffer差不多是一个数组，是一个内存块
 
 ~~~java
 //buffer成员变量
@@ -2730,8 +2737,6 @@ Buffer核心方法
 它建立了与数据源（如文件、网络套接字等）之间的连接
 
 ![Channel 和 Buffer之间的关系](https://oss.javaguide.cn/github/javaguide/java/nio/channel-buffer.png)
-
-读操作的时候将 Channel 中的数据填充到 Buffer 中，而写操作时将 Buffer 中的数据写入到 Channel 中
 
 Channel核心方法
 
@@ -2873,9 +2878,9 @@ JDK1.7把字符串常量池移动到堆中
 
 为什么？
 
-主要是因为永久代（方法区实现）的 GC 回收效率太低，只有在整堆收集 (Full GC)的时候才会被执行 GC。
+**主要是因为永久代（方法区实现）的 GC 回收效率太低，只有在整堆收集 (Full GC)的时候才会被执行 GC。**
 
-Java 程序中通常会有大量的被创建的字符串等待回收，将字符串常量池放到堆中，能够更高效及时地回收字符串内存。
+**Java 程序中通常会有大量的被创建的字符串等待回收，将字符串常量池放到堆中，能够更高效及时地回收字符串内存。**
 
 <img src="https://oss.javaguide.cn/github/javaguide/java/jvm/method-area-jdk1.7.png" alt="method-area-jdk1.7" style="zoom:67%;" />
 
@@ -3420,3 +3425,13 @@ Bloom Filter 会使用一个较大的 bit 数组来保存所有的数据，数�
 ### 访问修饰符
 
 ![访问修饰符图](https://imgconvert.csdnimg.cn/aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL0pvdXJXb24vaW1hZ2UvbWFzdGVyL0phdmElRTUlOUYlQkElRTclQTElODAlRTglQUYlQUQlRTYlQjMlOTUvSmF2YSVFOCVBRSVCRiVFOSU5NyVBRSVFNCVCRiVBRSVFOSVBNSVCMCVFNyVBQyVBNi5wbmc?x-oss-process=image/format,png)
+
+### 常用设计模式
+
+1. **单例模式（Singleton Pattern）**：确保一个类只有一个实例，并提供一个全局访问点。
+2. **工厂模式（Factory Pattern）**：定义一个创建对象的接口，但是让子类决定实例化哪个类。
+3. **观察者模式（Observer Pattern）**：定义了一种一对多的依赖关系，当一个对象状态改变时，所有依赖它的对象都会得到通知并自动更新。相当于通知类型
+4. **策略模式（Strategy Pattern）**：定义一系列算法，将每个算法封装起来，并使它们可以相互替换。
+5. **装饰器模式（Decorator Pattern）**：动态地给一个对象添加一些额外的职责，就增加功能来说，装饰器模式比生成子类更加灵活。
+6. **模板方法模式（Template Method Pattern）**：定义一个操作中的算法框架，而将一些步骤延迟到子类中。
+7. **适配器模式（Adapter Pattern）**：将一个类的接口转换成客户希望的另外一个接口。
