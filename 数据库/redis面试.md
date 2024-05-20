@@ -401,3 +401,288 @@ Redis 本身可以被多个客户端共享访问，正好就是一个共享存�
 
 ## Redis数据类型篇
 
+### string
+
+<img src="https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/string.png" alt="img" style="zoom: 50%;" />
+
+底层数据结构有int 和 SDS（简单动态字符串）
+
+SDS相对于普通的字符串区别
+
+- **SDS 不仅可以保存文本数据，还可以保存二进制数据**。因为 `SDS` 使用 `len` 属性的值而不是空字符来判断字符串是否结束。能保存图片、音频、视频、压缩文件这样的二进制数据。
+- 有一个len属性来记录字符串长度，所以获取 **获取字符串长度的时间复杂度是 O(1)**
+- **Redis 的 SDS API 是安全的，拼接字符串不会造成缓冲区溢出**，拼接前会检查字符串的空间是否充足
+
+#### 内部对象编码有三种
+
+![img](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/string%E7%BB%93%E6%9E%84.png)
+
+应用场景
+
+1.  缓存对象
+2. 常规计数，因为 Redis 处理命令是单线程，所以执行命令的过程是原子的。因此 String 数据类型适合计数场景，比如计算访问次数、点赞、转发、库存数量等等
+3. 分布式锁，SET 命令有个 NX 参数可以实现「key不存在才插入」，可以用它来实现分布式锁
+
+#### 共享 Session 信息
+
+我们系统会使用 Session 来保存用户的会话(登录)状态，这些 Session 信息会被保存在服务器端，但在分布式情况下，有多个服务器，如果访问的一个服务器没有保存就要重复登录。
+
+所以我们可以借助redis来实现，服务器都会去同一个 Redis 获取相关的 Session 信息，这样就解决了分布式系统下 Session 存储的问题
+
+![img](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/Session2.png)
+
+### List
+
+列表的最大长度为 `2^32 - 1`，也即每个列表支持超过 `40 亿`个元素
+
+内部实现由双向链表或压缩列表，3.2版本后用quicklist实现
+
+![img](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/list.png)
+
+#### 应用场景
+
+消息队列的实现，但也要保证消息的有序性，处理重复和消息可靠性
+
+List来实现队列的话有个问题就是塞入消息后无法通知消费者，需要程序中不停地调用 `RPOP` 命令（比如使用一个while(1)循环来查看有没有新结果
+
+因此List也出现了**阻塞式读取**，BRPOP 命令当没有消息会阻塞
+
+<img src="https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97.png" alt="img" style="zoom: 33%;" />
+
+对于消息的重复性处理，需要我们为每个消息生成一个全局id，并且由另一个队列来记录已经完成消息消费的id
+
+那消息的可靠性就是List 类型提供了 `BRPOPLPUSH` 命令，这个命令的**作用是让消费者程序从一个 List 中读取消息，同时，Redis 会把这个消息再插入到另一个 List（可以叫作备份 List）留存**，这样当出现异常时就会重新读取消息消费
+
+#### List的缺陷
+
+无法供多个消费者消费
+
+### Hash
+
+<img src="https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/hash.png" alt="img" style="zoom:33%;" />
+
+由哈希表组成
+
+#### 应用场景
+
+Hash 类型的 （key，field， value） 的结构与对象的（对象id， 属性， 值）的结构相似，也可以用来存储对象
+
+### set
+
+一个集合最多可以存储 `2^32-1` 个元素
+
+Set 类型的底层数据结构是由**哈希表或整数集合**实现的
+
+#### 应用场景
+
+有一个潜在的风险。**Set 的差集、并集和交集的计算复杂度较高，在数据量较大的情况下，如果直接执行这些计算，会导致 Redis 实例阻塞**
+
+#### 点赞
+
+Set 类型可以保证一个用户只能点一个赞
+
+#### 共同关注
+
+Set 类型支持交集运算，所以可以用来计算共同关注的好友、公众号等
+
+#### 抽奖活动
+
+存储某活动中中奖的用户名 ，Set 类型因为有去重功能，可以保证同一个用户不会中奖两次。
+
+### Zset
+
+<img src="https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/zset.png" alt="img" style="zoom:33%;" />
+
+#### 应用场景
+
+#### 排行榜
+
+有序集合比较典型的使用场景就是排行榜
+
+###  BitMap
+
+底层大概是bit数组
+
+![img](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/bitmap.png)
+
+####  应用场景
+
+#### 签到统计
+
+在签到打卡的场景中，我们只用记录签到（1）或未签到（0）
+
+```java
+BITCOUNT uid:sign:100:202206 //可以用来统计签到次数
+```
+
+#### 判断用户登陆态
+
+Bitmap 提供了 `GETBIT、SETBIT` 操作，通过一个偏移值 offset 对 bit 数组的 offset 位置的 bit 位进行读写操作，需要注意的是 offset 从 0 开始。
+
+只需要一个 key = login_status 表示存储用户登陆状态集合数据， 将用户 ID 作为 offset，在线就设置为 1，下线设置 0
+
+```shell
+SETBIT login_status 10086 1
+```
+
+#### 连续签到用户总数
+
+我们把每天的日期作为 Bitmap 的 key，userId 作为 offset，若是打卡则将 offset 位置的 bit 设置成 1。
+
+key 对应的集合的每个 bit 位的数据则是一个用户在该日期的打卡记录。
+
+一共有 7 个这样的 Bitmap，如果我们能对这 7 个 Bitmap 的对应的 bit 位做 『与』运算。
+
+1. 000001000
+2. 000001000
+3. 000001000
+
+这样就表示连续签到三天了
+
+## 数据结构
+
+不同于数据类型string，list等
+
+每个redis对象
+
+<img src="https://cdn.xiaolincoding.com//mysql/other/58d3987af2af868dca965193fb27c464.png" alt="img" style="zoom:33%;" />
+
+- type，标识该对象是什么类型的对象（String 对象、 List 对象、Hash 对象、Set 对象和 Zset 对象）；
+- encoding，标识该对象使用了哪种底层的数据结构；
+- **ptr，指向底层数据结构的指针**
+
+### SDS
+
+结构设计
+
+<img src="https://cdn.xiaolincoding.com//mysql/other/516738c4058cdf9109e40a7812ef4239.png" alt="img" style="zoom: 50%;" />
+
+- **alloc，分配给字符数组的空间长度**，可以通过 `alloc - len` 计算出剩余的空间大小，可以用来判断空间是否满足修改需求，不满足会自动扩容
+- **flags，用来表示不同类型的 SDS**，有5种类型，5 种类型的主要**区别就在于，它们数据结构中的 len 和 alloc 成员变量的数据类型不同**，可以节约内存空间，此外redis还**告诉编译器取消结构体在编译过程中的优化对齐，按照实际占用字节数进行对齐**
+
+<img src="https://cdn.xiaolincoding.com//mysql/other/35820959e8cf4376391c427ed7f81495.png" alt="img" style="zoom: 50%;" />
+
+<img src="https://cdn.xiaolincoding.com//mysql/other/47e6c8fbc17fd6c89bdfcb5eedaaacff.png" alt="img" style="zoom:50%;" />
+
+### 链表
+
+redis的链表结构
+
+是一个双向链表，有专门记录头节点和尾节点还有len来记录链表长度
+
+有专门的函数来操作节点，例如释放，比较，复制
+
+因此内存开销比较大
+
+![img](https://cdn.xiaolincoding.com//mysql/other/cadf797496816eb343a19c2451437f1e.png)
+
+### 压缩列表
+
+结构设计
+
+**由连续内存块组成的顺序型数据结构**，有点类似于数组
+
+![img](https://cdn.xiaolincoding.com//mysql/other/ab0b44f557f8b5bc7acb3a53d43ebfcb.png)
+
+- ***zlbytes***，记录整个压缩列表占用对内存字节数；
+- ***zltail***，记录压缩列表「尾部」节点距离起始地址由多少字节，也就是列表尾的偏移量；
+- ***zllen***，记录压缩列表包含的节点数量；
+- ***zlend***，标记压缩列表的结束点，固定值 0xFF（十进制255）。
+
+头尾元素时间复杂度为o（1），中间为o（n)
+
+节点构成
+
+<img src="https://cdn.xiaolincoding.com//mysql/other/a3b1f6235cf0587115b21312fe60289c.png" alt="img" style="zoom:67%;" />
+
+- ***prevlen***，记录了「前一个节点」的长度，目的是为了实现从后向前遍历；
+- ***encoding***，记录了当前节点实际数据的「类型和长度」，类型主要有两种：字符串和整数。
+- ***data***，记录了当前节点的实际数据，类型和长度都由 `encoding` 决定
+
+会根据数据类型是字符串还是整数，以及数据的大小，会使用不同空间大小的 prevlen 和 encoding 这两个元素里保存的信息
+
+就像prevlen，如果前面长度小于254，就用1字节存储，大于就用5字节
+
+这样的缺陷是会造成**连锁更新**
+
+假设当前所有节点长度为253，但我在entry1插入一个255的节点，那么e1就会把prevlen改为5字节，那么后续的节点也会持续更新，这样就造成内存空间的重新分配，造成性能下降
+
+### 哈希表
+
+哈希表是一个数组（dictEntry **table），数组的每个元素是一个指向「哈希表节点（dictEntry）」的指针。
+
+哈希冲突就链式哈希解决，链式哈希也有局限就是会访问元素时是o（n）
+
+<img src="https://cdn.xiaolincoding.com//mysql/other/dc495ffeaa3c3d8cb2e12129b3423118.png" alt="img" style="zoom:50%;" />
+
+所以到达一定程度后会进行扩展也就是rehash
+
+我们会定义两个哈希表，平时操作都会在哈希表1中进行，
+
+但是当哈希表的负载因子过大时，就会触发rehash，
+
+将哈希表1中的数据转移到哈希表2中，并且是渐进式就是每次客户的请求操作，我们都会转移一部分到hash2中，
+
+因为一次性转移太多会造成主线程的阻塞
+
+完成转移后，哈希表2变为哈希表1，哈希表1为空
+
+- **当负载因子大于等于 1 ，并且 Redis 没有在执行 bgsave 命令或者 bgrewiteaof 命令，也就是没有执行 RDB 快照或没有进行 AOF 重写的时候，就会进行 rehash 操作。**
+- **当负载因子大于等于 5 时，此时说明哈希冲突非常严重了，不管有没有有在执行 RDB 快照或 AOF 重写，都会强制进行 rehash 操作**
+
+<img src="https://cdn.xiaolincoding.com//mysql/other/85f597f7851b90d6c78bb0d8e39690fc.png" alt="img" style="zoom:33%;" />
+
+<img src="https://cdn.xiaolincoding.com//mysql/other/2fedbc9cd4cb7236c302d695686dd478.png" alt="img" style="zoom: 33%;" />
+
+### 整数集合
+
+整数集合是 Set 对象的底层实现之一。整数集合本质上是一块连续内存空间
+
+结构定义如下
+
+~~~c
+typedef struct intset {
+    //编码方式
+    uint32_t encoding;
+    //集合包含的元素数量
+    uint32_t length;
+    //保存元素的数组
+    int8_t contents[];
+} intset;
+~~~
+
+保存的元素看encoding的类型
+
+encoding属性有 INTSET_ENC_INT16， INTSET_ENC_INT32，INTSET_ENC_INT64
+
+如果加入的元素属性比当前的encoding大，就要整数集合升级，扩展空间内存
+
+<img src="https://cdn.xiaolincoding.com//mysql/other/e84b052381e240eeb8cc97d6b729968b.png" alt="img" style="zoom: 50%;" />
+
+一旦升级，不能降级
+
+### 跳表（没完全了解）
+
+Redis 只有 Zset 对象的底层实现用到了跳表，跳表的优势是能支持平均 O(logN) 复杂度的节点查找
+
+三级调表
+
+<img src="https://cdn.xiaolincoding.com//mysql/other/2ae0ed790c7e7403f215acb2bd82e884.png" alt="img" style="zoom: 50%;" />
+
+![img](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/3%E5%B1%82%E8%B7%B3%E8%A1%A8-%E8%B7%A8%E5%BA%A6.drawio.png)
+
+### quicklist
+
+quicklist 就是「双向链表 + 压缩列表」组合，因为一个 quicklist 就是一个链表，而链表中的每个元素又是一个压缩列表
+
+![img](https://cdn.xiaolincoding.com//mysql/other/f46cbe347f65ded522f1cc3fd8dba549.png)
+
+在向 quicklist 添加一个元素的时候，不会像普通的链表那样，直接新建一个链表节点。而是会检查插入位置的压缩列表是否能容纳该元素，如果能容纳就直接保存到 quicklistNode 结构里的压缩列表，如果不能容纳，才会新建一个新的 quicklistNode 结构
+
+## listpack
+
+目的是替代压缩列表，解决连锁更新的问题，没有指向前端长度的数据结构
+
+![img](https://cdn.xiaolincoding.com//mysql/other/c5fb0a602d4caaca37ff0357f05b0abf.png)
+
+**listpack 没有压缩列表中记录前一个节点长度的字段了，listpack 只记录当前节点的长度，当我们向 listpack 加入一个新元素的时候，不会影响其他节点的长度字段的变化，从而避免了压缩列表的连锁更新问题**。
