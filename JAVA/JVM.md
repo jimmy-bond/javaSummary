@@ -349,9 +349,20 @@ Object 类是一个特殊的类，是所有类的父类
 
 #### ==和equals的区别
 
-- 对于基本数据类型来说，`==` 比较的是值。
-- 对于引用数据类型来说，`==` 比较的是对象的内存地址。
-- equals不重写**object类**的话也是比较内存地址
+- 对于基本数据类型来说，`==` 比较的是值
+- 对于引用数据类型来说，`==` 比较的是对象的内存地址
+- 所有类都有equals方法
+
+equals无法判断基本数据类型，只能比较对象是否相等
+
+~~~java
+public boolean equals(Object obj) {
+     return (this == obj);
+}
+~~~
+
+- 如果没有重写的话，相当于用==去比较
+- 重写一般是去比较它们的属性
 
 `String` 中的 `equals` 方法是被重写过的，因为 `Object` 的 `equals` 方法是比较的对象的内存地址，而 `String` 的 `equals` 方法比较的是对象的值。
 
@@ -369,15 +380,30 @@ Object 类是一个特殊的类，是所有类的父类
 
 `equals` 方法判断是相等的两个对象，`hashCode` 值却不相等。
 
+#### 接口和抽象类的共同点和区别
+
+共同点:
+
+- 都不能实例化
+- 都可以有抽象方法
+
+区别：
+
+- 一个类只能继承一个父类，可以继承多个接口
+- 接口主要用来规定类的行为方法，抽象类则用来代码复用和强调所属关系
+- 接口的成员变量是public static final，不能修改。抽象类的成员变量默认default可以在子类中重新定义或赋值
+
 ### String
 
 #### String、StringBuffer、StringBuilder 的区别？
 
-**`String` 是不可变的**
+由可变性，安全性和性能方面去解释
 
-`StringBuilder` 与 `StringBuffer` 都继承自 `AbstractStringBuilder` 类，在 `AbstractStringBuilder` 中也是使用字符数组保存字符串，用append可以修改字符串
+**`String` 是不可变的，所以是线程安全的**
 
-**`String` 中的对象是不可变的，也就可以理解为常量，线程安全**。
+`StringBuilder` 与 `StringBuffer` 都继承自 `AbstractStringBuilder` 类，
+
+在 `AbstractStringBuilder` 中也是使用字符数组保存字符串，但没有用private和final来修饰，用append（）可以修改字符串
 
 `StringBuilder` 并没有对方法进行加同步锁，所以是非线程安全的。
 
@@ -389,20 +415,28 @@ stringBuffer是安全的
 
 但使用StringBuilder要承担多线程不安全的风险
 
+**使用场景**
+
+String：少量数据
+
+`StringBuilder` ：单线程操作字符串缓缓冲区下大量数据
+
+StringBuffer：多线程下操作字符串缓冲区大量数据
+
 #### String为什么不可变
 
 **因为`String` 类中使用 `final` 关键字修饰字符数组**来保存字符串
 
 ~~~java
-public final class String implements java.io.Serializable, Comparable<String>, CharSequence {
+public final class String implements java.io.Serializable {
     private final char value[];
-  //...
 }
 ~~~
 
-保存字符串的数组被 `final` 修饰且为私有的，并且`String` 类没有提供/暴露修改这个字符串的方法。
+不可变的原因
 
-`String` 类被 `final` 修饰导致其不能被继承，进而避免了子类破坏 `String` 不可变。
+- 保存字符串的数组被 `final` 修饰且为私有的，并且`String` 类没有提供/暴露修改这个字符串的方法。
+- `String` 类被 `final` 修饰导致其不能被继承，进而避免了子类破坏 `String` 不可变。
 
 ### 字符串拼接用到+
 
@@ -457,9 +491,9 @@ ArrayList<E> extends AbstractList<E>
 
 ## 反射
 
-通过反射你可以获取任意一个类的所有属性和方法，你还可以调用这些方法和属性。是框架的灵魂
+### 什么是反射
 
-Spring/Spring Boot、MyBatis **大量使用了动态代理，而动态代理的实现也依赖反射**
+反射是一种在程序运行时动态获取类的信息，操作类的属性和方法的机制，而不需要在编译时确定这些信息
 
  JDK 实现动态代理的示例代码，其中就使用了反射类 `Method` 来调用指定的方法。
 
@@ -485,7 +519,7 @@ public class DebugInvocationHandler implements InvocationHandler {
 
 #### 反射实战
 
-要动态获取信息，需要依靠class对象（字节码对象）
+要动态获取信息，先需要依靠class对象（字节码对象）
 
 有四种方式
 
@@ -575,7 +609,7 @@ Service Provider Interface
 
 如果我们需要持久化 Java 对象比如将 Java 对象保存在文件中，或者在网络传输 Java 对象，这些场景都需要用到序列化。
 
-- **序列化**：将数据结构或对象转换成二进制字节流的过程
+- **序列化**：将数据结构或对象转换成**二进制字节流**的过程
 - **反序列化**：将在序列化过程中所生成的二进制字节流转换成数据结构或者对象的过程
 
 **序列化的主要目的是通过网络传输对象或者说是将对象存储到文件系统、数据库、内存中。**
@@ -1421,25 +1455,27 @@ private void enqueue(E x) {
 
 ### HashMap和Hashtable的区别
 
-线程安全性：HashMap是不安全的。
+线程安全性：
 
-HashTable是安全的，`Hashtable` 内部的方法基本都经过`synchronized` 修饰。
+- HashMap是不安全的
+- Hashtable` 内部的方法基本都经过`synchronized修饰。
 
-HashMap**对 Null key 和 Null value 支持**，Hashtable则会抛出异常
+
+Null key 和 Null value支持：
+
+- ​	HashMap支持，但HashTable会抛异常
 
 **初始容量大小和每次扩充容量大小的不同**：
 
-HashMap默认大小为16，扩容策略为2倍。
+- HashMap默认大小为16，扩容策略为2倍。如果不使用默认大小容量，`HashMap` 会将其扩充为 2 的幂次方大小
+- HashTable是11，默认扩容是2n+1
 
-如果不使用默认大小容量，`HashMap` 会将其扩充为 2 的幂次方大小
+这个方法保证了大小为2的幂次方。先将cap-1。
 
-这个方法保证了大小为2的幂次方。先将cap-1，通过连续进行按位或和无符号右移操作，确保在目标容量的二进制表示中，除了最高位的1之外，所有的位都被设置为1，最后加一返回就变成了2的幂次方了
+然后除了最高位的1之外，所有的位都被设置为1，最后加一返回就变成了2的幂次方了
 
 ~~~java
-    /**
-     * Returns a power of two size for the given target capacity.
-     */
-    static final int tableSizeFor(int cap) {
+static final int tableSizeFor(int cap) {
         int n = cap - 1;
         n |= n >>> 1;
         n |= n >>> 2;
@@ -1451,7 +1487,9 @@ HashMap默认大小为16，扩容策略为2倍。
 
 ~~~
 
-**底层数据结构：** `HashMap` 在解决哈希冲突时有了较大的变化，当链表长度大于阈值（默认为 8）时，将链表转化为红黑树（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树），以减少搜索时
+**底层数据结构：**
+
+ `HashMap` 在解决哈希冲突时有了较大的变化，当链表长度大于阈值（默认为 8）时，将链表转化为红黑树（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树），以减少搜索时间
 
 ### 和TreeMap的区别
 
@@ -1475,13 +1513,11 @@ JDK1.8 中，实际上无论`HashSet`中是否已经存在了某元素，`HashSe
 
 ### HashMap底层实现
 
-JDK1.8 之前 `HashMap` 底层是 **数组和链表** 结合在一起使用也就是 **链表散列**，得到key的hash值，
+JDK1.8 之前 `HashMap` 底层是 **数组和链表** ，得到key的hash值
 
 然后通过 `(n - 1) & hash` 判断当前元素存放的位置。（n 指的是数组的长度，因为n等于2的幂次方，所以n为111...）
 
-并且Hash 值的范围值-2147483648 到 2147483647太大了，数组放不下，所以采用Hash%n的操作
-
- **hash%length==hash&(length-1)的前提是 length 是 2 的 n 次方”** 并且 **采用二进制位操作 &，相对于%能够提高运算效率，这就解释了 HashMap 的长度为什么是 2 的幂次方。**
+ hash%length==hash&(length-1)的前提是 length 是 2 的 n 次方，采用&方式比较快
 
 jdk1.8的底层，当链表长度大于8时就会转换成红黑树
 
@@ -1491,11 +1527,13 @@ jdk1.8的底层，当链表长度大于8时就会转换成红黑树
 
 **举个例子**
 
-两个线程 1,2 同时进行 put 操作，并且发生了哈希冲突（hash 函数计算出的插入下标是相同的）。
+两个线程 1,2 同时进行 put 操作，并且发生了哈希冲突。
 
-不同的线程可能在不同的时间片获得 CPU 执行的机会，当前线程 1 执行完哈希冲突判断后，由于时间片耗尽挂起。线程 2 先完成了插入操作。
+当前线程 1 执行完哈希冲突判断后，由于时间片耗尽挂起。线程 2 先完成了插入操作。
 
-随后，线程 1 获得时间片，由于之前已经进行过 hash 碰撞的判断，所有此时会直接进行插入，这就导致线程 2 插入的数据被线程 1 覆盖了。
+随后，线程 1 获得时间片，之前进行过 hash 碰撞的判断，此时会直接进行插入，
+
+这就导致数据覆盖了。
 
 还有一种情况是这两个线程同时 `put` 操作导致 `size` 的值不正确，进而导致数据覆盖的问题：
 
@@ -1526,15 +1564,15 @@ jdk1.8的底层，当链表长度大于8时就会转换成红黑树
 
 ### ConcurrentHashMap 和 Hashtable 的区别
 
-ConcurrentHashMap 底层数据结构是数组加链表和红黑树，Hashtable 则是数组加链表
+底层数据结构：
+
+ConcurrentHashMap 是数组加链表和红黑树，Hashtable 则是数组加链表
 
 **实现线程安全的方式（重要）**
 
-**`Hashtable`(同一把锁)** :使用 `synchronized` 来保证线程安全，效率非常低下。
+- **`Hashtable`(同一把锁)** :使用 `synchronized` 来保证线程安全，效率非常低下。
 
-当一个线程访问同步方法时，其他线程也访问同步方法，可能会进入阻塞或轮询状态，如使用 put 添加元素，另一个线程不能使用 put 添加元素，也不能使用 get，竞争会越来越激烈效率越低。
-
-JDK1.8 的时候，`ConcurrentHashMap` 已经摒弃了 `Segment`（分段锁，只锁容器的一部分数据） 的概念，而是直接用 `Node` 数组+链表+红黑树的数据结构来实现，并发控制使用 `synchronized` 和 CAS 来操作。 **整个看起来就像是优化过且线程安全的 `HashMap`**，虽然在 JDK1.8 中还能看到 `Segment` 的数据结构，但是已经简化了属性，只是为了兼容旧版本；
+  当一个线程访问同步方法时，其他线程也访问同步方法，如使用 put 添加元素，另一个线程不能使用 put 添加元素，也不能使用 get，竞争会越来越激烈效率越低。
 
 #### ConcurrentHashMap线程安全具体实现
 
@@ -1542,70 +1580,74 @@ JDK1.8 的时候，`ConcurrentHashMap` 已经摒弃了 `Segment`（分段锁，�
 
 ![Java7 ConcurrentHashMap 存储结构](https://oss.javaguide.cn/github/javaguide/java/collection/java7_concurrenthashmap.png)
 
-**`ConcurrentHashMap` 是由 `Segment` 数组结构和 `HashEntry` 数组结构组成**
+**`ConcurrentHashMap` 是由 `Segment` 数组结构和 `HashEntry` 数组结构组成**，
 
-`Segment` 继承了 `ReentrantLock`,所以 `Segment` 是一种可重入锁，扮演锁的角色。`HashEntry` 用于存储键值对数据。
+分段数组加链表
 
-`Segment` 的个数一旦**初始化就不能改变**。 `Segment` 数组的大小默认是 16，也就是说默认可以同时支持 16 个线程并发写。
+`Segment` 的个数一旦初始化就不能改变。默认大小为16可以同时支持 16 个线程并发写。
 
-一个 `Segment` 包含一个 `HashEntry` 数组每个 `Segment` 守护着一个 `HashEntry` 数组里的元素，当对 `HashEntry` 数组的数据进行修改时，必须首先获得对应的 `Segment` 的锁。也就是说，对同一 `Segment` 的并发写入会被阻塞，不同 `Segment` 的写入是可以并发执行的。
+当访问一段数组的时候，要先获取segment锁，不同的分段数组可以并发执行。
 
 #### JDK1.8 之后
 
 ![Java8 ConcurrentHashMap 存储结构](https://oss.javaguide.cn/github/javaguide/java/collection/java8_concurrenthashmap.png)
 
-`ConcurrentHashMap` 取消了 `Segment` 分段锁，采用 `Node + CAS + synchronized` 来保证并发安全。
+`ConcurrentHashMap` 取消了 `Segment` 分段锁，采用 `Node + CAS + synchronized` 来保证并发安全。1.7没有红黑树
 
 **`synchronized` 只锁定当前链表或红黑二叉树的首节点**，这样只要 hash 不冲突，就不会产生并发，就不会影响其他 Node 的读写，效率大幅提升。
 
+锁粒度更细并且并发度更大，并发度是整个Node数组的大小
+
 CAS操作：
 
-CAS是Compare And Swap的缩写，即比较与交换，通常指的==是一种原子操作==，它用于解决多线程并发访问共享数据时的线程安全问题。CAS操作包含三个操作数：需要修改的内存位置V、预期原值A和新值B。当且仅当预期原值与内存位置的当前值相同时，才会将内存位置的值修改为新值；否则，CAS操作会失败，并返回内存位置的当前值。
-
-**Java 语言并没有直接实现 CAS，。因此， CAS 的具体实现和操作系统以及 CPU 都有关系。**
-
-**`sun.misc`包下的`Unsafe`类提供了`compareAndSwapObject`、`compareAndSwapInt`、`compareAndSwapLong`方法来实现的对`Object`、`int`、`long`类型的 CAS 操作**
-
-JDK1.8相比于JDK1.7并发度更大（为Node数组大小），线程安全实现方式不一样，Hash碰撞解决方法不一样，**1.7为拉链法**，1.8为拉链法结合红黑树。**并且他们都不能存储null值key和value，会产生二义性（get返回null无法判断是否有）**
-
-`ConcurrentHashMap` 提供了一些原子性的复合操作，如 `putIfAbsent`、`compute`、`computeIfAbsent` 、`computeIfPresent`、`merge`等。
-
-可以优化这些操作
-
-~~~java
-// 线程 A
-if (!map.containsKey(key)) {
-map.put(key, value);
-}
-// 线程 B
-if (!map.containsKey(key)) {
-map.put(key, anotherValue);
-}
---------------------------------------
-    // 线程 A
-map.putIfAbsent(key, value);
-// 线程 B
-map.putIfAbsent(key, anotherValue);
-
-~~~
-
-
+- CAS是Compare And Swap的缩写，即比较与交换，通常指的==是一种原子操作==，它用于解决多线程并发访问共享数据时的线程安全问题。
+- CAS操作包含三个操作数：需要修改的内存位置V、预期原值A和新值B。当且仅当预期原值与内存位置的当前值相同时，才会将内存位置的值修改为新值；否则，CAS操作会失败，并返回内存位置的当前值。
 
 ## Java并发面试
 
-### 线程和进程定义
+### 进程和线程的区别
 
-进程是系统运行程序的基本单位。
+定义：
 
-当我们启动 main 函数时其实就是启动了一个 JVM 的进程，而 main 函数所在的线程就是这个进程中的一个线程，也称主线程。
+- 进程是程序执行的实例，基本单位。
+- 线程是线程执行中的一个单元，cpu调度和执行的基本单位
 
-线程为一个更小的执行单位。
+资源拥有：
 
-与进程不同的是同类的多个线程共享进程的**堆**和**方法区**资源，但每个线程有自己的**程序计数器**、**虚拟机栈**和**本地方法栈**，线程切换工作负担比进程小
+- 进程由独立的内存空间
+- 线程共享一个进程的内存空间和资源
 
-### Java线程和操作系统的线程区别
+切换成本：
 
-在 JDK 1.2 及以后，Java 线程改为基于原生线程（Native Threads）实现，也就是说 JVM 直接使用操作系统原生的内核级线程（内核线程）来实现 Java 线程，由操作系统内核进行线程的调度和管理
+- 进程：切换进程的开销比较大，涉及到上下文的切换，需要保存和恢复更多的状态信息。
+- 线程：切换线程的开销相对较小，因为线程共享了同一个进程的地址空间，上下文切换只涉及到线程的私有数据。
+
+并发性：
+
+- 进程：进程之间相互独立，通信和同步需要使用进程间通信（IPC）机制，如管道、信号、消息队列等
+- 线程：通过共享内存信息来实现通信
+
+### sleep和wait的区别
+
+使用对象：
+
+- sleep为thread类的方法，线程对象可以直接调用，并且sleep不会释放资源
+- wait是object类的方法，只能在同步方法或同步代码块中使用，wait会释放对象锁
+
+用途:
+
+- sleep让线程休眠一段时间
+- wait主要用于线程间的通信写作
+
+唤醒方式：
+
+- sleep到点自动唤醒，或者被其他线程中断时会抛出 `InterruptedException` 异常而被唤醒。
+- wait要其他线程调用`notify()` 或 `notifyAll()` 方法，或等待超时时限
+
+### run方法和start方法区别
+
+- run方法会在当前线程的调用栈上执行，不会启动新的线程
+- start方法会创建一个新的线程并执行run方法
 
 ### 用户线程和内核线程区别
 
