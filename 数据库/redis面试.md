@@ -405,7 +405,7 @@ Redis 本身可以被多个客户端共享访问，正好就是一个共享存�
 
 <img src="https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/string.png" alt="img" style="zoom: 50%;" />
 
-底层数据结构有int 和 SDS（简单动态字符串）
+底层数据结构有**int 和 SDS（简单动态字符串）**
 
 SDS相对于普通的字符串区别
 
@@ -433,9 +433,9 @@ SDS相对于普通的字符串区别
 
 ### List
 
-列表的最大长度为 `2^32 - 1`，也即每个列表支持超过 `40 亿`个元素
+列表的最大长度为 `2^32 - 1`，也即每个列表支持超过 `40 亿`个元素,
 
-内部实现由双向链表或压缩列表，3.2版本后用quicklist实现
+**内部实现由双向链表或压缩列表，3.2版本后用quicklist实现**
 
 ![img](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/list.png)
 
@@ -449,19 +449,19 @@ List来实现队列的话有个问题就是塞入消息后无法通知消费者�
 
 <img src="https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97.png" alt="img" style="zoom: 33%;" />
 
-对于消息的重复性处理，需要我们为每个消息生成一个全局id，并且由另一个队列来记录已经完成消息消费的id
+对于消息的重复性处理，需要我们为每个消息生成一个全局id，并且由另一个队列来记录已经完成消息消费的id(可以用redis来记录表示)
 
 那消息的可靠性就是List 类型提供了 `BRPOPLPUSH` 命令，这个命令的**作用是让消费者程序从一个 List 中读取消息，同时，Redis 会把这个消息再插入到另一个 List（可以叫作备份 List）留存**，这样当出现异常时就会重新读取消息消费
 
 #### List的缺陷
 
-无法供多个消费者消费
+消息无法供多个消费者消费
 
 ### Hash
 
 <img src="https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/hash.png" alt="img" style="zoom:33%;" />
 
-由哈希表组成
+**由哈希表或压缩列表组成**
 
 #### 应用场景
 
@@ -475,7 +475,7 @@ Set 类型的底层数据结构是由**哈希表或整数集合**实现的
 
 #### 应用场景
 
-有一个潜在的风险。**Set 的差集、并集和交集的计算复杂度较高，在数据量较大的情况下，如果直接执行这些计算，会导致 Redis 实例阻塞**
+有一个潜在的风险。**Set 的差集、并集和交集的计算复杂度较高，在数据量较大的情况下，如果直接执行这些计算，会导致 Redis 实例阻塞**。
 
 #### 点赞
 
@@ -493,6 +493,8 @@ Set 类型支持交集运算，所以可以用来计算共同关注的好友、�
 
 <img src="https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/zset.png" alt="img" style="zoom:33%;" />
 
+**由压缩列表或跳表实现**
+
 #### 应用场景
 
 #### 排行榜
@@ -501,7 +503,7 @@ Set 类型支持交集运算，所以可以用来计算共同关注的好友、�
 
 ###  BitMap
 
-底层大概是bit数组
+**底层大概是bit数组**
 
 ![img](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/bitmap.png)
 
@@ -541,9 +543,7 @@ key 对应的集合的每个 bit 位的数据则是一个用户在该日期的�
 
 ## 数据结构
 
-不同于数据类型string，list等
-
-每个redis对象
+不同于数据类型string，list等，每个redis对象的对象结构是一样的
 
 <img src="https://cdn.xiaolincoding.com//mysql/other/58d3987af2af868dca965193fb27c464.png" alt="img" style="zoom:33%;" />
 
@@ -558,7 +558,8 @@ key 对应的集合的每个 bit 位的数据则是一个用户在该日期的�
 <img src="https://cdn.xiaolincoding.com//mysql/other/516738c4058cdf9109e40a7812ef4239.png" alt="img" style="zoom: 50%;" />
 
 - **alloc，分配给字符数组的空间长度**，可以通过 `alloc - len` 计算出剩余的空间大小，可以用来判断空间是否满足修改需求，不满足会自动扩容
-- **flags，用来表示不同类型的 SDS**，有5种类型，5 种类型的主要**区别就在于，它们数据结构中的 len 和 alloc 成员变量的数据类型不同**，可以节约内存空间，此外redis还**告诉编译器取消结构体在编译过程中的优化对齐，按照实际占用字节数进行对齐**
+- **flags，用来表示不同类型的 SDS**，有5种类型，5 种类型的主要**区别就在于，它们数据结构中的 len 和 alloc 成员变量的数据类型不同**，可以节约内存空间。
+- 此外redis还**告诉编译器取消结构体在编译过程中的优化对齐，按照实际占用字节数进行对齐**
 
 <img src="https://cdn.xiaolincoding.com//mysql/other/35820959e8cf4376391c427ed7f81495.png" alt="img" style="zoom: 50%;" />
 
@@ -580,16 +581,13 @@ redis的链表结构
 
 结构设计
 
+本质上是一个数组，添加了元素个数，尾节点的偏移量，结尾标识符和列表长度
+
 **由连续内存块组成的顺序型数据结构**，有点类似于数组
 
 ![img](https://cdn.xiaolincoding.com//mysql/other/ab0b44f557f8b5bc7acb3a53d43ebfcb.png)
 
-- ***zlbytes***，记录整个压缩列表占用对内存字节数；
-- ***zltail***，记录压缩列表「尾部」节点距离起始地址由多少字节，也就是列表尾的偏移量；
-- ***zllen***，记录压缩列表包含的节点数量；
-- ***zlend***，标记压缩列表的结束点，固定值 0xFF（十进制255）。
-
-头尾元素时间复杂度为o（1），中间为o（n)
+**头尾元素时间复杂度为o（1），中间为o（n)**
 
 节点构成
 
@@ -619,7 +617,7 @@ redis的链表结构
 
 我们会定义两个哈希表，平时操作都会在哈希表1中进行，
 
-但是当哈希表的负载因子过大时，就会触发rehash，
+但是当哈希表的负载因子过大时，就会触发渐进式rehash，
 
 将哈希表1中的数据转移到哈希表2中，并且是渐进式就是每次客户的请求操作，我们都会转移一部分到hash2中，
 
@@ -661,11 +659,17 @@ encoding属性有 INTSET_ENC_INT16， INTSET_ENC_INT32，INTSET_ENC_INT64
 
 一旦升级，不能降级
 
-### 跳表（没完全了解）
+### 跳表
 
 Redis 只有 Zset 对象的底层实现用到了跳表，跳表的优势是能支持平均 O(logN) 复杂度的节点查找
 
-三级调表
+每两个相邻元素，第一个元素往上建一个冗余元素来建立索引，提高查找的性能
+
+**实现一个多层的有序链表**
+
+插入和删除都是（logn），就是用空间换
+
+三级跳表
 
 <img src="https://cdn.xiaolincoding.com//mysql/other/2ae0ed790c7e7403f215acb2bd82e884.png" alt="img" style="zoom: 50%;" />
 
