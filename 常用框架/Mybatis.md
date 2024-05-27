@@ -54,7 +54,7 @@ Person queryById(@Param("id") Long id, @Param("name") String name);
 - `queryById(1L)`方法执行时，`parameterObject`为 map，包含了`id`和`param1`两个 key 值。当获取`<if>`标签中`name`的属性值时，进入`((Map)parameterObject).get(name)`方法中，map 中 key 不包含`name`，所以抛出异常。
 - `queryById(1L,"1")`方法执行时，`parameterObject`中包含`id`,`param1`,`name`,`param2`四个 key 值，`id`和`name`属性都可以获取到，动态 sql 正常执行。
 
-### [为什么说 MyBatis 是半自动 ORM 映射工具？它与全自动的区别在哪里？](https://javaguide.cn/system-design/framework/mybatis/mybatis-interview.html#为什么说-mybatis-是半自动-orm-映射工具-它与全自动的区别在哪里)
+### 为什么说 MyBatis 是半自动 ORM 映射工具？它与全自动的区别在哪里？
 
 Hibernate 属于全自动 ORM 映射工具，使用 Hibernate 查询关联对象或者关联集合对象时，可以根据对象关系模型直接获取，所以它是全自动的。而 MyBatis 在查询关联对象或关联集合对象时，需要手动编写 sql 来完成，所以，称之为半自动 ORM 映射工具
 

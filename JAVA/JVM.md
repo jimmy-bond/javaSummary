@@ -14,10 +14,6 @@
 
   声明事务是通过配置方式来管理事务，编程事务通过编写代码显式地管理事务的开始、提交和回滚。（比较少用）
 
-**java事务管理类型**
-
- JDBC事务、JTA（Java Transaction API）事务、容器事务
-
 #### 1.1 JDBC事务
 
 JDBC的一切行为包括事务是基于一个Connection的，JDBC通过Connection对象进行事务管理。
@@ -25,12 +21,6 @@ JDBC的一切行为包括事务是基于一个Connection的，JDBC通过Connecti
 常用的事物相关方法是：setAutoCommit    commit    rollback等
 
 JDBC事务的优点： 接口较为简单，性能较好 缺点： 不支持多[数据库](https://cloud.tencent.com/solution/database?from_column=20065&from=20065)的事务
-
-#### 1.2 JTA事务
-
-Java事务API（Java Transaction API，简称JTA） Java事务服务（Java Transaction Service，简称JTS）
-
-JTA和JTS一起，为J2EE平台提供了[分布式事务](https://cloud.tencent.com/product/dtf?from_column=20065&from=20065)服务。JTA只提供接口，没有具体的实现，需要J2EE服务提供商根据JTS规范提供，
 
 ### spring声明事务实现
 
@@ -70,8 +60,6 @@ JTA和JTS一起，为J2EE平台提供了[分布式事务](https://cloud.tencent.
 
 ### @Transactional 实践
 
-在深入理解事务的传播行为之前，我们需要理解三个基本的概念，理解了它们我们就理解了事务传播行为。它们分别是：嵌套事务、新事务、当前事务
-
 A事务的定义如下不会改变，B事务的传播行为可能会变。
 
 ~~~java
@@ -94,9 +82,9 @@ public void B() {
 @Transactional(rollbackFor = Exception.class, propagation = Propagation.NESTED)
 ~~~
 
-嵌套事务和父事务是有关联的，当A事务回滚的时候，B事务一定回滚。
+**嵌套事务和父事务是有关联的，当A事务回滚的时候，B事务一定回滚。**
 
-当B事务异常回滚的时候，要判断在A里面是否try了B事务，如果try就A不会回滚，只是B回滚。
+**当B事务异常回滚的时候，要判断在A里面是否try了B事务，如果try就A不会回滚，只是B回滚。**
 
 ##### 新事务
 
@@ -162,15 +150,13 @@ JIT为编译器把文件编译过一次就会保存下来机器码，后面再�
 3. 字符型：Character
 4. 布尔型：Boolean
 
-包装类型主要用于集合类（如`ArrayList`、`LinkedList`等）和泛型中，因为这些类只能存储对象，无法存储基本类型。
+包装类型主要用于集合类（如`ArrayList`、`LinkedList`等）和泛型中，**因为这些类只能存储对象，无法存储基本类型。**
 
 - **默认值**：**成员变量包装类型不赋值就是 `null` ，而基本类型有默认值且不是 `null`。**
 
-**基本数据类型存放在栈中是一个常见的误区。如果它们是局部变量，那么它们会存放在栈中；如果它们是成员变量，那么它们会存放在堆中。！** 
+**基本数据类型存放在栈中是一个常见的误区。如果它们是局部变量，那么它们会存放在栈中；如果它们是成员变量，那么它们会存放在堆中。** 
 
 ### 包装类型的缓存机制
-
-包装类型的==比较的是对象的内存地址
 
 Java 基本数据类型的包装类型的大部分都用到了缓存机制来提升性能.
 
@@ -220,22 +206,9 @@ int n = i;   //拆箱 等价于int n = i.intValue()
 
 `BigDecimal` 可以实现对浮点数的运算，不会造成精度丢失。
 
-~~~
-BigDecimal a = new BigDecimal("1.0");
-BigDecimal b = new BigDecimal("0.9");
-BigDecimal c = new BigDecimal("0.8");
-
-BigDecimal x = a.subtract(b);
-BigDecimal y = b.subtract(c);
-
-System.out.println(x); /* 0.1 */
-System.out.println(y); /* 0.1 */
-System.out.println(Objects.equals(x, y)); /* true */
-~~~
-
 ### 静态变量
 
-静态变量也就是被 `static` 关键字修饰的变量。它可以被类的所有实例共享，无论一个类创建了多少个对象，它们都共享同一份静态变量。
+静态变量也就是被 `static` 关键字修饰的变量。**它可以被类的所有实例共享**，无论一个类创建了多少个对象，它们都共享同一份静态变量。
 
 静态变量是通过类名来访问的，例如`StaticVariableExample.staticVar`（如果被 `private`关键字修饰就无法这样访问了）。
 
@@ -249,7 +222,7 @@ System.out.println(Objects.equals(x, y)); /* true */
 
 ### 静态方法为什么不能调用非静态成员
 
-1.静态方法是属于类的，在类加载的时候就会分配内存，可以通过类名直接访问。而非静态成员属于实例对象，只有在对象实例化之后才存在，需要通过类的实例对象去访问。
+1.静态方法是属于类的，在类加载的时候就会分配内存，可以通过类名直接访问。**而非静态成员属于实例对象，只有在对象实例化之后才存在**，需要通过类的实例对象去访问。
 
 2.在类的非静态成员不存在的时候静态方法就已经存在了，此时调用在内存中还不存在的非静态成员，属于非法操作。
 
@@ -2132,7 +2105,9 @@ public class Thread implements Runnable {
 
 `Thread` 类中有一个 `threadLocals` 和 一个 `inheritableThreadLocals` 变量，都是 `ThreadLocalMap` 类型的变量。
 
-我们可以把 `ThreadLocalMap` 理解为`ThreadLocal` 类实现的定制化的 `HashMap`。只有当前线程调用 `ThreadLocal` 类的 `set`或`get`方法时才创建它们（threadLocalMap）。
+我们可以把 `ThreadLocalMap` 理解为`ThreadLocal` 类实现的定制化的 `HashMap`。
+
+只有当前线程调用 `ThreadLocal` 类的 `set`或`get`方法时才创建它们。
 
 **因为`ThreadLocalMap`是`ThreadLocal`的静态内部类**
 
@@ -2147,6 +2122,7 @@ public void set(T value) {
     if (map != null)
         // 将需要存储的值放入到这个哈希表中
         map.set(this, value);
+    //这里的this为threadlocal，value为我们设置的数值
     else
         createMap(t, value);
 }
@@ -2157,7 +2133,9 @@ ThreadLocalMap getMap(Thread t) {
 
 **最终的变量是放在了当前线程的 `ThreadLocalMap` 中，并不是存在 `ThreadLocal` 上，`ThreadLocal` 可以理解为只是`ThreadLocalMap`的封装，传递了变量值。**
 
-**每个`Thread`中都具备一个`ThreadLocalMap`，而`ThreadLocalMap`可以存储以`ThreadLocal`为 key ，Object 对象为 value 的键值对。**
+**每个`Thread`中都具备一个`ThreadLocalMap`，**
+
+**而`ThreadLocalMap`可以存储以`ThreadLocal`为 key ，Object 对象为 value 的键值对。**
 
 `ThreadLocalMap`的 key 就是 `ThreadLocal`对象，value 就是 `ThreadLocal` 对象调用`set`方法设置的值。
 
@@ -2183,7 +2161,7 @@ ThreadLocalMap getMap(Thread t) {
 
 - **降低资源消耗**。通过重复利用已创建的线程降低线程创建和销毁造成的消耗。
 - **提高响应速度**。当任务到达时，任务可以不需要等到线程创建就能立即执行。
-- **提高线程的可管理性**。线程是稀缺资源，如果无限制的创建，不仅会消耗系统资源，还会降低系统的稳定性，使用线程池可以进行统一的分配，调优和监控。
+- **提高线程的可管理性**。线程是稀缺资源，如果无限制的创建，不仅会消耗系统资源，还会降低系统的稳定性，使用线程池可以进行统一的分配，调优和监控。还可以控制并发度
 
 #### 创建线程池
 

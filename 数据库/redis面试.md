@@ -191,6 +191,8 @@ Redis 提供了两个命令来生成 RDB 文件，分别是 save 和 bgsave，�
 
 ### Redis集群
 
+三大模式
+
 #### 主从复制
 
 将主服务器的读写操作同步到其他的从服务器，并且主从服务器读写分离，从服务器只读，客户端只能对主服务器进行写操作。
@@ -690,3 +692,27 @@ quicklist 就是「双向链表 + 压缩列表」组合，因为一个 quicklist
 ![img](https://cdn.xiaolincoding.com//mysql/other/c5fb0a602d4caaca37ff0357f05b0abf.png)
 
 **listpack 没有压缩列表中记录前一个节点长度的字段了，listpack 只记录当前节点的长度，当我们向 listpack 加入一个新元素的时候，不会影响其他节点的长度字段的变化，从而避免了压缩列表的连锁更新问题**。
+
+### Redis的缓存读写策略
+
+有三种
+
+**Cache Aside Pattern（旁路缓存模式）**
+
+先更新数据库再删除缓存
+
+**Read/Write Through Pattern（读写穿透）**
+
+Read/Write Through Pattern 中服务端把 cache 视为主要数据存储，从中读取数据并将数据写入其中。cache 服务负责将此数据读取和写入 db，从而减轻了应用程序的职责，而不是应用
+
+![img](https://img-blog.csdnimg.cn/img_convert/bf35f95b0b32c8d895c327b45250ad33.png)
+
+![img](https://img-blog.csdnimg.cn/img_convert/54418c5f11b7a9fb65da1f0edb61ea96.png)
+
+#### Write Behind Pattern（异步缓存写入）
+
+也是由 cache 服务来负责 cache 和 db 的读写。**而 Write Behind 则是只更新缓存，不直接更新 db，而是改为异步批量的方式来更新 db。**读写穿透是同步更新
+
+### Redis的数据结构
+
+![img](https://cdn.xiaolincoding.com//mysql/other/9fa26a74965efbf0f56b707a03bb9b7f-20230309232459468.png)
