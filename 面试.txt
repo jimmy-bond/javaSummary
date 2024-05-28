@@ -27,3 +27,10 @@ springboot的启动流程
 慢sql怎么解决
 hashmap的扩容因子了解过吗
 手撕链表翻转
+
+汇丰面试
+socket
+lsit 和 map
+session
+vim的模式
+jvm的stack和heap
